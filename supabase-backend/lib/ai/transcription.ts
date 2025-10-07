@@ -18,7 +18,7 @@ import type { Transcript, TranscriptSegment } from '../types';
  * @returns Structured transcript with speaker diarization
  */
 export async function transcribeAudio(
-  audioFile: File | Blob,
+  audioFile: File,
   apiKey: string
 ): Promise<Transcript> {
   const openai = new OpenAI({ apiKey });

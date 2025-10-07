@@ -2,6 +2,7 @@
 node_modules/
 frontend/node_modules/
 supabase-backend/node_modules/
+package-lock.json
 /.pnp
 .pnp.*
 .yarn/*

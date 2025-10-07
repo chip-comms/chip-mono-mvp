@@ -1,0 +1,26 @@
+{
+  "name": "chip-mono-mvp",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Meeting Intelligence Assistant - Monorepo",
+  "workspaces": [
+    "frontend",
+    "supabase-backend"
+  ],
+  "scripts": {
+    "install:all": "npm install && cd frontend && npm install && cd ../supabase-backend && npm install",
+    "lint": "npm run lint --workspaces --if-present",
+    "lint:frontend": "npm run lint --workspace=frontend",
+    "lint:backend": "npm run lint --workspace=supabase-backend",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,css,md}\" \"!**/node_modules/**\" \"!**/.next/**\" \"!**/build/**\" \"!**/dist/**\"",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\" \"!**/node_modules/**\" \"!**/.next/**\" \"!**/build/**\" \"!**/dist/**\"",
+    "format:frontend": "npm run format --workspace=frontend",
+    "format:backend": "npm run format --workspace=supabase-backend",
+    "dev:frontend": "npm run dev --workspace=frontend",
+    "build:frontend": "npm run build --workspace=frontend"
+  },
+  "devDependencies": {
+    "prettier": "^3.0.0"
+  }
+}
+

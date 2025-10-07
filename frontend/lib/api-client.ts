@@ -1,8 +1,8 @@
 import axios, { AxiosProgressEvent } from 'axios';
 import { Recording, Intelligence, UploadResponse, ProcessingResponse } from './types';
 
-// Configuration - adjust these to match your backend
-const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || 'http://localhost:8000';
+// Configuration - using local Next.js API routes
+const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
@@ -49,26 +49,14 @@ export class MeetingAssistantAPI {
 
   /**
    * Process a sample recording (for demo purposes)
+   * TODO: Implement sample recording functionality
    */
-  static async processSampleRecording(sampleFilename: string): Promise<UploadResponse> {
-    try {
-      const response = await apiClient.post('/api/process-sample', {
-        filename: sampleFilename,
-      });
-
-      return {
-        success: true,
-        recordingId: response.data.recordingId || response.data.id,
-        message: response.data.message || 'Sample processing started',
-      };
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Sample processing failed';
-      console.error('Sample processing failed:', errorMessage);
-      return {
-        success: false,
-        error: errorMessage,
-      };
-    }
+  static async processSampleRecording(_sampleFilename: string): Promise<UploadResponse> {
+    // For now, just return an error since we haven't implemented this yet
+    return {
+      success: false,
+      error: 'Sample recording not yet implemented',
+    };
   }
 
   /**
@@ -145,7 +133,7 @@ export class MeetingAssistantAPI {
    */
   static async healthCheck(): Promise<boolean> {
     try {
-      const response = await apiClient.get('/health');
+      const response = await apiClient.get('/api/health');
       return response.status === 200;
     } catch (error) {
       console.warn('Backend health check failed:', error);

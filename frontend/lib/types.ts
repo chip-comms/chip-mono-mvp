@@ -8,7 +8,9 @@ export interface Recording {
   filename: string;
   fileType: string;
   fileSizeBytes: number;
+  durationSeconds?: number;
   status: RecordingStatus;
+  processingError?: string;
   createdAt: string;
   processingProgress?: number;
 }

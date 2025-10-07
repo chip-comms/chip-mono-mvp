@@ -38,11 +38,6 @@ export function calculateCommunicationMetrics(
     averageResponseDelay: avgDelay,
     responseDelays: delays,
     interruptions,
-    companyValuesAlignment: {
-      overallAlignment: 0,
-      values: []
-    },
-    insights: ''
   };
 }
 

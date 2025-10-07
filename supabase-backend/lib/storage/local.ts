@@ -67,10 +67,9 @@ export class LocalStorageAdapter implements StorageAdapter {
    */
   async getFileAsArrayBuffer(filePath: string): Promise<ArrayBuffer> {
     const buffer = await this.getFile(filePath);
-    return buffer.buffer.slice(
-      buffer.byteOffset,
-      buffer.byteOffset + buffer.byteLength
-    );
+    const ab = new ArrayBuffer(buffer.byteLength);
+    new Uint8Array(ab).set(buffer);
+    return ab;
   }
 
   /**
