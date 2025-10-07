@@ -1,0 +1,23 @@
+{
+  "name": "meeting-intelligence-backend",
+  "version": "1.0.0",
+  "description": "Backend logic for meeting intelligence assistant",
+  "type": "module",
+  "scripts": {
+    "test": "echo \"No tests yet\" && exit 0"
+  },
+  "dependencies": {
+    "openai": "^4.0.0",
+    "fluent-ffmpeg": "^2.1.2",
+    "formidable": "^3.5.1",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/fluent-ffmpeg": "^2.1.24",
+    "@types/formidable": "^3.4.5",
+    "@types/uuid": "^9.0.7",
+    "@types/node": "^20.0.0",
+    "typescript": "^5.3.0"
+  }
+}
+
