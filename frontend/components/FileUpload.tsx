@@ -11,10 +11,10 @@ interface FileUploadProps {
   onUploadError: (error: string) => void;
 }
 
-export default function FileUpload({ 
-  onUploadStart, 
-  onUploadComplete, 
-  onUploadError 
+export default function FileUpload({
+  onUploadStart,
+  onUploadComplete,
+  onUploadError,
 }: FileUploadProps) {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
@@ -23,74 +23,90 @@ export default function FileUpload({
   // Supported file formats
   const acceptedFormats = {
     'video/*': ['.mp4', '.webm', '.mov', '.avi'],
-    'audio/*': ['.mp3', '.wav', '.m4a', '.aac']
+    'audio/*': ['.mp3', '.wav', '.m4a', '.aac'],
   };
 
   const maxFileSize = 200 * 1024 * 1024; // 200MB
 
-  const onDrop = useCallback(async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
-    if (rejectedFiles.length > 0) {
-      const rejection = rejectedFiles[0];
-      if (rejection.errors.some((error) => error.code === 'file-too-large')) {
-        onUploadError('File size must be less than 200MB');
-      } else if (rejection.errors.some((error) => error.code === 'file-invalid-type')) {
-        onUploadError('Please upload a video (MP4, WebM, MOV) or audio (MP3, WAV, M4A) file');
-      } else {
-        onUploadError('Invalid file. Please try again.');
-      }
-      return;
-    }
-
-    if (acceptedFiles.length === 0) return;
-
-    const file = acceptedFiles[0];
-    setIsUploading(true);
-    setUploadProgress(0);
-    onUploadStart(file.name);
-
-    try {
-      const result = await MeetingAssistantAPI.uploadFile(file, (progressEvent) => {
-        if (progressEvent.total) {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / progressEvent.total);
-          setUploadProgress(percentCompleted);
+  const onDrop = useCallback(
+    async (acceptedFiles: File[], rejectedFiles: FileRejection[]) => {
+      if (rejectedFiles.length > 0) {
+        const rejection = rejectedFiles[0];
+        if (rejection.errors.some((error) => error.code === 'file-too-large')) {
+          onUploadError('File size must be less than 200MB');
+        } else if (
+          rejection.errors.some((error) => error.code === 'file-invalid-type')
+        ) {
+          onUploadError(
+            'Please upload a video (MP4, WebM, MOV) or audio (MP3, WAV, M4A) file'
+          );
+        } else {
+          onUploadError('Invalid file. Please try again.');
         }
-      });
-
-      if (result.success && result.recordingId) {
-        onUploadComplete(result.recordingId);
-      } else {
-        onUploadError(result.error || 'Upload failed');
+        return;
       }
-    } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
-      onUploadError(errorMessage);
-    } finally {
-      setIsUploading(false);
+
+      if (acceptedFiles.length === 0) return;
+
+      const file = acceptedFiles[0];
+      setIsUploading(true);
       setUploadProgress(0);
-    }
-  }, [onUploadStart, onUploadComplete, onUploadError]);
+      onUploadStart(file.name);
+
+      try {
+        const result = await MeetingAssistantAPI.uploadFile(
+          file,
+          (progressEvent) => {
+            if (progressEvent.total) {
+              const percentCompleted = Math.round(
+                (progressEvent.loaded * 100) / progressEvent.total
+              );
+              setUploadProgress(percentCompleted);
+            }
+          }
+        );
+
+        if (result.success && result.recordingId) {
+          onUploadComplete(result.recordingId);
+        } else {
+          onUploadError(result.error || 'Upload failed');
+        }
+      } catch (error: unknown) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Upload failed';
+        onUploadError(errorMessage);
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
+    },
+    [onUploadStart, onUploadComplete, onUploadError]
+  );
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
     accept: acceptedFormats,
     maxSize: maxFileSize,
-    multiple: false
+    multiple: false,
   });
 
   const handleSampleUpload = async () => {
     setIsSampleProcessing(true);
-    onUploadStart('Beau_Lauren (2024-06-20 15_06 GMT-4).mp4');
+    const sampleFilename = 'Beau_Lauren (2024-06-20 15_06 GMT-4).mp4';
+    onUploadStart(sampleFilename);
 
     try {
-      const result = await MeetingAssistantAPI.processSampleRecording('Beau_Lauren (2024-06-20 15_06 GMT-4).mp4');
-      
+      const result =
+        await MeetingAssistantAPI.processSampleRecording(sampleFilename);
+
       if (result.success && result.recordingId) {
         onUploadComplete(result.recordingId);
       } else {
         onUploadError(result.error || 'Sample processing failed');
       }
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Sample processing failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Sample processing failed';
       onUploadError(errorMessage);
     } finally {
       setIsSampleProcessing(false);
@@ -104,28 +120,33 @@ export default function FileUpload({
         {...getRootProps()}
         className={`
           border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-          ${isDragActive 
-            ? 'border-blue-500 bg-blue-50' 
-            : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
+          ${
+            isDragActive
+              ? 'border-blue-500 bg-blue-50'
+              : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
           }
           ${isUploading ? 'pointer-events-none opacity-50' : ''}
         `}
       >
         <input {...getInputProps()} />
-        
+
         <div className="space-y-4">
           {isUploading ? (
             <>
               <Loader2 className="w-12 h-12 mx-auto text-blue-500 animate-spin" />
               <div className="space-y-2">
-                <p className="text-lg font-medium text-gray-700">Uploading...</p>
+                <p className="text-lg font-medium text-gray-700">
+                  Uploading...
+                </p>
                 <div className="w-full bg-gray-200 rounded-full h-2">
-                  <div 
+                  <div
                     className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
-                <p className="text-sm text-gray-500">{uploadProgress}% complete</p>
+                <p className="text-sm text-gray-500">
+                  {uploadProgress}% complete
+                </p>
               </div>
             </>
           ) : (
@@ -133,7 +154,9 @@ export default function FileUpload({
               <Upload className="w-12 h-12 mx-auto text-gray-400" />
               <div className="space-y-2">
                 <p className="text-lg font-medium text-gray-700">
-                  {isDragActive ? 'Drop your file here' : 'Upload a meeting recording'}
+                  {isDragActive
+                    ? 'Drop your file here'
+                    : 'Upload a meeting recording'}
                 </p>
                 <p className="text-sm text-gray-500">
                   Drag & drop or click to select a file
@@ -162,7 +185,9 @@ export default function FileUpload({
               <Play className="w-8 h-8 text-purple-600" />
             </div>
             <div>
-              <h3 className="text-lg font-semibold text-gray-800">Try a Sample Recording</h3>
+              <h3 className="text-lg font-semibold text-gray-800">
+                Try a Sample Recording
+              </h3>
               <p className="text-sm text-gray-600">
                 Use our demo recording to see the AI analysis in action
               </p>
@@ -171,15 +196,16 @@ export default function FileUpload({
               </p>
             </div>
           </div>
-          
+
           <button
             onClick={handleSampleUpload}
             disabled={isSampleProcessing || isUploading}
             className={`
               px-6 py-2 rounded-lg font-medium transition-colors
-              ${isSampleProcessing 
-                ? 'bg-gray-300 text-gray-500 cursor-not-allowed' 
-                : 'bg-purple-600 text-white hover:bg-purple-700'
+              ${
+                isSampleProcessing
+                  ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                  : 'bg-purple-600 text-white hover:bg-purple-700'
               }
             `}
           >
@@ -201,7 +227,10 @@ export default function FileUpload({
         <ul className="text-sm text-blue-800 space-y-1">
           <li>• Clear audio quality improves transcription accuracy</li>
           <li>• Shorter recordings (under 30 min) process faster</li>
-          <li>• Multiple speakers? Great! We&apos;ll analyze communication patterns</li>
+          <li>
+            • Multiple speakers? Great! We&apos;ll analyze communication
+            patterns
+          </li>
           <li>• Processing typically takes 2-5 minutes</li>
         </ul>
       </div>

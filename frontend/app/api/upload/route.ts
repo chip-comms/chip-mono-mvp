@@ -102,11 +102,14 @@ export async function POST(req: NextRequest) {
 async function processRecordingAsync(recordingId: string) {
   try {
     // Call the process endpoint
-    const response = await fetch(`${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/process`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ recordingId }),
-    });
+    const response = await fetch(
+      `${process.env.NEXTAUTH_URL || 'http://localhost:3000'}/api/process`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ recordingId }),
+      }
+    );
 
     if (!response.ok) {
       throw new Error('Processing failed');

@@ -12,7 +12,7 @@ chip-mono-mvp/
 │   ├── app/
 │   │   ├── api/                 # API routes (import from supabase-backend)
 │   │   │   ├── upload/route.ts           # POST /api/upload
-│   │   │   ├── process/route.ts          # POST /api/process  
+│   │   │   ├── process/route.ts          # POST /api/process
 │   │   │   ├── recordings/route.ts       # GET /api/recordings
 │   │   │   ├── intelligence/[id]/route.ts # GET /api/intelligence/:id
 │   │   │   ├── recordings/[id]/file/[filename]/route.ts # File serving
@@ -41,7 +41,8 @@ chip-mono-mvp/
 ## 🔧 What's Working
 
 ### ✅ **API Routes Created**
-- `POST /api/upload` - File upload with validation  
+
+- `POST /api/upload` - File upload with validation
 - `POST /api/process` - AI processing pipeline
 - `GET /api/recordings` - List all recordings
 - `GET /api/intelligence/:id` - Get AI analysis results
@@ -49,14 +50,16 @@ chip-mono-mvp/
 - `GET /api/health` - Backend health check
 
 ### ✅ **Frontend Integration**
+
 - API client updated to use local routes (not external backend)
 - Types synchronized between frontend and backend
 - All UI components ready to work with local API
 - Build passes without errors
 
 ### ✅ **Backend Logic Imported**
+
 - AI transcription (OpenAI Whisper)
-- AI analysis (GPT-4o-mini)  
+- AI analysis (GPT-4o-mini)
 - Communication metrics calculation
 - Local file storage
 - Local JSON database
@@ -83,12 +86,15 @@ npm run dev
 ## 🧪 Testing the Setup
 
 ### 1. **Health Check**
+
 ```bash
 curl http://localhost:3000/api/health
 ```
+
 Should return JSON with status "healthy".
 
 ### 2. **Upload a File**
+
 ```bash
 curl -X POST http://localhost:3000/api/upload \
   -F "file=@your-video.mp4" \
@@ -96,6 +102,7 @@ curl -X POST http://localhost:3000/api/upload \
 ```
 
 ### 3. **Check Recordings**
+
 ```bash
 curl http://localhost:3000/api/recordings
 ```
@@ -112,12 +119,14 @@ All in the **same Next.js process**!
 ## ⚙️ Configuration
 
 ### Required Environment Variables
+
 ```bash
 # frontend/.env.local
 OPENAI_API_KEY=sk-your-actual-key-here
 ```
 
 ### File Storage Locations
+
 - **Uploaded files**: `supabase-backend/storage/uploads/`
 - **Recordings metadata**: `supabase-backend/data/recordings.json`
 - **AI intelligence**: `supabase-backend/data/intelligence/`
@@ -129,7 +138,7 @@ OPENAI_API_KEY=sk-your-actual-key-here
    ```bash
    brew install ffmpeg
    ```
-3. **Start the dev server**: `npm run dev` 
+3. **Start the dev server**: `npm run dev`
 4. **Upload a test file** in the browser
 5. **Watch the AI processing** in the terminal logs
 

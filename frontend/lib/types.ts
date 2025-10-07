@@ -1,5 +1,9 @@
 // Recording status types
-export type RecordingStatus = 'uploading' | 'processing' | 'completed' | 'failed';
+export type RecordingStatus =
+  | 'uploading'
+  | 'processing'
+  | 'completed'
+  | 'failed';
 
 // Recording metadata interface
 export interface Recording {

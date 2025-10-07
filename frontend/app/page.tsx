@@ -10,7 +10,9 @@ import RecordingsList from '@/components/RecordingsList';
 export default function Home() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(null);
+  const [isBackendConnected, setIsBackendConnected] = useState<boolean | null>(
+    null
+  );
   const [notification, setNotification] = useState<{
     type: 'success' | 'error' | 'info';
     message: string;
@@ -37,7 +39,10 @@ export default function Home() {
   }, []);
 
   // Show notification
-  const showNotification = (type: 'success' | 'error' | 'info', message: string) => {
+  const showNotification = (
+    type: 'success' | 'error' | 'info',
+    message: string
+  ) => {
     setNotification({ type, message });
     setTimeout(() => setNotification(null), 5000);
   };
@@ -57,7 +62,10 @@ export default function Home() {
   };
 
   const handleUploadComplete = () => {
-    showNotification('success', 'Upload successful! Processing will begin shortly.');
+    showNotification(
+      'success',
+      'Upload successful! Processing will begin shortly.'
+    );
     loadRecordings(); // Refresh the list
   };
 
@@ -71,11 +79,13 @@ export default function Home() {
     const bgColor = {
       success: 'bg-green-50 border-green-200 text-green-800',
       error: 'bg-red-50 border-red-200 text-red-800',
-      info: 'bg-blue-50 border-blue-200 text-blue-800'
+      info: 'bg-blue-50 border-blue-200 text-blue-800',
     };
 
     return (
-      <div className={`fixed top-4 right-4 z-50 p-4 rounded-lg border max-w-md ${bgColor[notification.type]}`}>
+      <div
+        className={`fixed top-4 right-4 z-50 p-4 rounded-lg border max-w-md ${bgColor[notification.type]}`}
+      >
         <p className="text-sm font-medium">{notification.message}</p>
       </div>
     );
@@ -119,11 +129,15 @@ export default function Home() {
                 <Brain className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900">CHIP Communication Coach</h1>
-                <p className="text-sm text-gray-600">AI-Powered Meeting Intelligence</p>
+                <h1 className="text-xl font-bold text-gray-900">
+                  CHIP Communication Coach
+                </h1>
+                <p className="text-sm text-gray-600">
+                  AI-Powered Meeting Intelligence
+                </p>
               </div>
             </div>
-            
+
             {renderConnectionStatus()}
           </div>
         </div>
@@ -135,9 +149,12 @@ export default function Home() {
           // Backend Disconnected State
           <div className="text-center py-12">
             <WifiOff className="w-16 h-16 mx-auto text-red-500 mb-4" />
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Backend Disconnected</h2>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">
+              Backend Disconnected
+            </h2>
             <p className="text-gray-600 mb-6">
-              Unable to connect to the backend server. Please make sure your backend is running.
+              Unable to connect to the backend server. Please make sure your
+              backend is running.
             </p>
             <button
               onClick={checkBackendConnection}
@@ -156,11 +173,12 @@ export default function Home() {
                   Transform Your Meeting Recordings
                 </h2>
                 <p className="text-lg text-gray-600 max-w-3xl mx-auto">
-                  Upload your meeting recordings and get AI-powered insights including transcripts, 
-                  summaries, action items, and communication analytics.
+                  Upload your meeting recordings and get AI-powered insights
+                  including transcripts, summaries, action items, and
+                  communication analytics.
                 </p>
               </div>
-              
+
               <FileUpload
                 onUploadStart={handleUploadStart}
                 onUploadComplete={handleUploadComplete}
@@ -176,8 +194,8 @@ export default function Home() {
                   <p className="text-gray-600">Loading recordings...</p>
                 </div>
               ) : (
-                <RecordingsList 
-                  recordings={recordings} 
+                <RecordingsList
+                  recordings={recordings}
                   onRefresh={loadRecordings}
                 />
               )}

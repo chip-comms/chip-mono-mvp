@@ -8,8 +8,9 @@ import { config } from '@/supabase-backend/lib/config';
 
 export async function GET() {
   try {
-    const hasOpenAIKey = !!config.openaiApiKey && config.openaiApiKey !== 'sk-your-key-here';
-    
+    const hasOpenAIKey =
+      !!config.openaiApiKey && config.openaiApiKey !== 'sk-your-key-here';
+
     return NextResponse.json({
       status: 'healthy',
       timestamp: new Date().toISOString(),
@@ -18,7 +19,7 @@ export async function GET() {
         supportedFormats: config.supportedFormats,
         companyValues: config.companyValues,
         hasOpenAIKey,
-      }
+      },
     });
   } catch (error) {
     return NextResponse.json(

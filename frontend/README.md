@@ -27,7 +27,7 @@ A modern React/Next.js frontend for the CHIP Communication Coach MVP. This appli
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - Your backend service running (typically on port 8000)
 
 ## Getting Started
@@ -157,8 +157,8 @@ npm run lint
 
 ## Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|------|
+| Variable                  | Description          | Default                 |
+| ------------------------- | -------------------- | ----------------------- |
 | `NEXT_PUBLIC_BACKEND_URL` | Backend API base URL | `http://localhost:8000` |
 
 ## Contributing

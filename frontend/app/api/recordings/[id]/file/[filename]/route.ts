@@ -15,36 +15,33 @@ export async function GET(
   try {
     await storage.initialize();
     const resolvedParams = await params;
-    
+
     // Get file extension from filename to determine content type
     const ext = resolvedParams.filename.toLowerCase().split('.').pop() || '';
     const contentTypeMap: Record<string, string> = {
-      'mp4': 'video/mp4',
-      'webm': 'video/webm',
-      'mov': 'video/quicktime',
-      'mp3': 'audio/mpeg',
-      'wav': 'audio/wav',
-      'm4a': 'audio/mp4',
+      mp4: 'video/mp4',
+      webm: 'video/webm',
+      mov: 'video/quicktime',
+      mp3: 'audio/mpeg',
+      wav: 'audio/wav',
+      m4a: 'audio/mp4',
     };
-    
+
     const contentType = contentTypeMap[ext] || 'application/octet-stream';
-    
+
     // Get file from storage (stored with ID, not original filename)
     const filePath = storage.getFilePath(resolvedParams.id, '.' + ext);
-    
+
     if (!(await storage.fileExists(filePath))) {
-      return NextResponse.json(
-        { error: 'File not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: 'File not found' }, { status: 404 });
     }
-    
+
     const fileBuffer = await storage.getFile(filePath);
-    
+
     // Convert Uint8Array to ArrayBuffer for NextResponse
     const ab = new ArrayBuffer(fileBuffer.byteLength);
     new Uint8Array(ab).set(fileBuffer);
-    
+
     return new NextResponse(ab, {
       status: 200,
       headers: {
@@ -56,7 +53,9 @@ export async function GET(
   } catch (error) {
     console.error('Failed to serve file:', error);
     return NextResponse.json(
-      { error: error instanceof Error ? error.message : 'Failed to serve file' },
+      {
+        error: error instanceof Error ? error.message : 'Failed to serve file',
+      },
       { status: 500 }
     );
   }

@@ -12,7 +12,7 @@ export async function GET() {
   try {
     await data.initialize();
     const recordings = await data.getRecordings();
-    
+
     return NextResponse.json({
       recordings,
     });
@@ -21,7 +21,8 @@ export async function GET() {
     return NextResponse.json(
       {
         recordings: [],
-        error: error instanceof Error ? error.message : 'Failed to get recordings',
+        error:
+          error instanceof Error ? error.message : 'Failed to get recordings',
       },
       { status: 500 }
     );
