@@ -3,6 +3,7 @@
 ## ✅ Completed
 
 ### Backend Core (Portable Logic)
+
 - ✅ `supabase-backend/lib/types.ts` - All TypeScript types
 - ✅ `supabase-backend/lib/config.ts` - Configuration
 - ✅ `supabase-backend/lib/ai/transcription.ts` - Whisper API integration
@@ -12,12 +13,14 @@
 - ✅ `supabase-backend/lib/data/local.ts` - Local JSON adapter
 
 ### API Routes (Ready to integrate)
+
 - ✅ `supabase-backend/api/upload.ts` - File upload handler
 - ✅ `supabase-backend/api/process.ts` - AI processing pipeline
 - ✅ `supabase-backend/api/recordings.ts` - List recordings
 - ✅ `supabase-backend/api/intelligence.ts` - Get intelligence
 
 ### Documentation
+
 - ✅ PROJECT_PLAN.md - Overall architecture
 - ✅ SETUP.md - Setup instructions
 - ✅ supabase-backend/README.md - Backend docs
@@ -27,6 +30,7 @@
 ## 🚧 Next Steps (For Frontend Agent)
 
 ### 1. Create Next.js Frontend Project
+
 ```bash
 cd frontend
 npx create-next-app@latest . --typescript --tailwind --app
@@ -43,6 +47,7 @@ Copy the logic from `supabase-backend/api/*.ts` and adapt to Next.js App Router 
 - [ ] `frontend/app/api/intelligence/[id]/route.ts` - Copy from `supabase-backend/api/intelligence.ts`
 
 **Import backend logic**:
+
 ```typescript
 import { transcribeAudio } from '../../../supabase-backend/lib/ai/transcription';
 import { LocalStorageAdapter } from '../../../supabase-backend/lib/storage/local';
@@ -50,6 +55,7 @@ import { LocalStorageAdapter } from '../../../supabase-backend/lib/storage/local
 ```
 
 ### 3. Build Frontend Components (in frontend/app/components/)
+
 - [ ] `UploadSection.tsx` - Drag & drop file upload
 - [ ] `RecordingsList.tsx` - List with status polling
 - [ ] `IntelligenceViewer.tsx` - Tabbed intelligence display
@@ -57,11 +63,13 @@ import { LocalStorageAdapter } from '../../../supabase-backend/lib/storage/local
 **See `supabase-backend/API_DOCUMENTATION.md` for integration examples!**
 
 ### 4. Build Main Page (frontend/app/page.tsx)
+
 - [ ] Compose all components
 - [ ] Implement polling (every 3 seconds)
 - [ ] Handle status transitions
 
 ### 5. Setup Environment
+
 ```bash
 cd frontend
 echo "OPENAI_API_KEY=sk-your-key" > .env.local
@@ -69,6 +77,7 @@ mkdir -p public/uploads
 ```
 
 ### 6. Test End-to-End
+
 - [ ] Upload test recording
 - [ ] Verify processing works
 - [ ] Check intelligence display
@@ -76,13 +85,17 @@ mkdir -p public/uploads
 ## Architecture Benefits
 
 ### What's Portable (90%+)
+
 All code in `supabase-backend/lib/ai/` is 100% portable:
+
 - ✅ Works in Node.js (current)
 - ✅ Will work in Deno (future)
 - ✅ No rewrites needed for Supabase Edge Functions
 
 ### What Needs Migration (<10%)
+
 Only the I/O adapters need rewriting:
+
 - 🔄 `lib/storage/local.ts` → `lib/storage/supabase.ts`
 - 🔄 `lib/data/local.ts` → `lib/data/supabase.ts`
 - 🔄 API routes syntax (Node.js → Deno)
@@ -113,4 +126,3 @@ open http://localhost:3000
 **Total**: ~15 files for MVP
 
 We're about 40% done!
-

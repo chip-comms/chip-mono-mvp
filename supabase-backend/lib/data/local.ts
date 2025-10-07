@@ -1,6 +1,6 @@
 /**
  * Local JSON Data Adapter
- * 
+ *
  * I/O LAYER: Node.js specific, will need rewriting for Deno/Supabase.
  * Implements the DataAdapter interface using JSON files.
  */
@@ -13,9 +13,7 @@ export class LocalDataAdapter implements DataAdapter {
   private recordingsFile: string;
   private intelligenceDir: string;
 
-  constructor(
-    dataDir: string = 'data'
-  ) {
+  constructor(dataDir: string = 'data') {
     this.recordingsFile = path.join(dataDir, 'recordings.json');
     this.intelligenceDir = path.join(dataDir, 'intelligence');
   }
@@ -56,7 +54,7 @@ export class LocalDataAdapter implements DataAdapter {
 
   async getRecording(id: string): Promise<Recording | null> {
     const recordings = await this.getRecordings();
-    return recordings.find(r => r.id === id) || null;
+    return recordings.find((r) => r.id === id) || null;
   }
 
   async saveRecording(recording: Recording): Promise<void> {
@@ -79,7 +77,7 @@ export class LocalDataAdapter implements DataAdapter {
   ): Promise<void> {
     try {
       const recordings = await this.getRecordings();
-      const index = recordings.findIndex(r => r.id === id);
+      const index = recordings.findIndex((r) => r.id === id);
 
       if (index === -1) {
         throw new Error(`Recording ${id} not found`);
@@ -99,7 +97,7 @@ export class LocalDataAdapter implements DataAdapter {
   async deleteRecording(id: string): Promise<void> {
     try {
       const recordings = await this.getRecordings();
-      const filtered = recordings.filter(r => r.id !== id);
+      const filtered = recordings.filter((r) => r.id !== id);
       await fs.writeFile(
         this.recordingsFile,
         JSON.stringify(filtered, null, 2)
@@ -116,7 +114,7 @@ export class LocalDataAdapter implements DataAdapter {
 
   async getIntelligence(recordingId: string): Promise<Intelligence | null> {
     const filePath = path.join(this.intelligenceDir, `${recordingId}.json`);
-    
+
     try {
       const data = await fs.readFile(filePath, 'utf-8');
       return JSON.parse(data);
@@ -146,11 +144,10 @@ export class LocalDataAdapter implements DataAdapter {
       await fs.unlink(filePath);
     } catch (error) {
       // Ignore if file doesn't exist
-      if ((error as any).code !== 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code !== 'ENOENT') {
         console.error('Failed to delete intelligence:', error);
         throw new Error(`Failed to delete intelligence: ${error}`);
       }
     }
   }
 }
-

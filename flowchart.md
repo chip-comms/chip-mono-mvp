@@ -1,6 +1,7 @@
 # Virtual Meeting Assistant MVP (Local Prototype)
 
 ## Overview
+
 A minimal **local-only** web application to test the core value proposition: upload a meeting recording → automatically generate transcript, summary, action items, and insights. **No auth, no database, no deployment** - just the essential flow running on your machine to validate the AI intelligence quality.
 
 ---
@@ -8,28 +9,33 @@ A minimal **local-only** web application to test the core value proposition: upl
 ## Core Components
 
 ### 1. Frontend (Next.js App)
+
 **Tech Stack**: Next.js + TypeScript + Tailwind CSS
 
 **Single Page App**:
+
 - Upload section at top
 - Recordings list below (reads from local JSON file)
 - Click to expand intelligence inline
-  
+
 **Upload Section**:
+
 - Drag & drop or file picker for video/audio files
 - Support formats: MP4, WebM, MOV, MP3, WAV
 - Uploads to Next.js API route
 - Shows processing status
 - File size validation (max 200MB)
-  
+
 **Recordings List**:
+
 - Reads from `data/recordings.json`
 - Status badges: "Processing", "Completed", "Failed"
 - Click to expand and view intelligence
-  
+
 **Intelligence View**:
+
 - Video/audio player (serves from `public/uploads/`)
-- Tabs: 
+- Tabs:
   - Summary: AI-generated overview
   - Transcript: Full text with timestamps
   - Action Items: Extracted tasks with priority
@@ -44,6 +50,7 @@ A minimal **local-only** web application to test the core value proposition: upl
 **API Routes**:
 
 #### `POST /api/upload`
+
 - Receives file from frontend
 - Saves to `public/uploads/{filename}`
 - Creates entry in `data/recordings.json`
@@ -51,6 +58,7 @@ A minimal **local-only** web application to test the core value proposition: upl
 - Returns recording ID
 
 #### `POST /api/process`
+
 - Called automatically after upload
 - Extracts audio if video (using FFmpeg)
 - Calls OpenAI Whisper for transcription
@@ -59,9 +67,11 @@ A minimal **local-only** web application to test the core value proposition: upl
 - Updates status in `data/recordings.json`
 
 #### `GET /api/recordings`
+
 - Returns list of all recordings from JSON file
 
 #### `GET /api/intelligence/:id`
+
 - Returns intelligence data for specific recording
 
 ---
@@ -69,6 +79,7 @@ A minimal **local-only** web application to test the core value proposition: upl
 ### 3. Local Storage (No Database)
 
 **File Structure**:
+
 ```
 project/
 ├── public/
@@ -83,6 +94,7 @@ project/
 ```
 
 **`data/recordings.json`**:
+
 ```json
 [
   {
@@ -98,35 +110,28 @@ project/
 ```
 
 **`data/intelligence/abc123.json`**:
+
 ```json
 {
   "recordingId": "abc123",
   "transcript": "Speaker 1: Good morning everyone...",
   "summary": "The team discussed...",
-  "actionItems": [
-    {"text": "Deploy to staging", "priority": "high"}
-  ],
-  "keyTopics": [
-    {"topic": "Sprint Planning", "relevance": 0.9}
-  ],
+  "actionItems": [{ "text": "Deploy to staging", "priority": "high" }],
+  "keyTopics": [{ "topic": "Sprint Planning", "relevance": 0.9 }],
   "sentiment": {
     "overall": "positive",
     "score": 0.7
   },
   "speakerStats": {
-    "speakers": [
-      {"name": "Speaker 1", "duration": 120, "wordCount": 450}
-    ]
+    "speakers": [{ "name": "Speaker 1", "duration": 120, "wordCount": 450 }]
   },
   "communicationMetrics": {
     "talkTimePercentage": 35,
-    "responseDelays": [
-      {"afterSpeaker": "Speaker 2", "delaySeconds": 0.5}
-    ],
+    "responseDelays": [{ "afterSpeaker": "Speaker 2", "delaySeconds": 0.5 }],
     "eyeContact": null,
     "companyValuesAlignment": {
       "values": [
-        {"value": "Collaboration", "score": 0.8, "examples": ["..."]}
+        { "value": "Collaboration", "score": 0.8, "examples": ["..."] }
       ]
     }
   }
@@ -140,17 +145,20 @@ project/
 ### What We Want to Analyze
 
 #### 1. **Talk Time Percentage** 📊
+
 **Question**: What percent of the meeting time are you talking vs others?
 
 **Data Source**: Audio transcript with speaker diarization + timestamps
 
 **Implementation** (Audio-only):
+
 - Parse transcript timestamps to calculate duration per speaker
 - Calculate: `(your_talk_time / total_meeting_time) * 100`
 - Compare to other speakers' percentages
 - Ideal range: Depends on role (manager vs IC, meeting type)
 
 **Output**:
+
 ```json
 {
   "talkTimePercentage": 35,
@@ -159,9 +167,9 @@ project/
     "others": 65
   },
   "speakerBreakdown": [
-    {"speaker": "You", "percentage": 35, "duration": 420},
-    {"speaker": "Speaker 2", "percentage": 45, "duration": 540},
-    {"speaker": "Speaker 3", "percentage": 20, "duration": 240}
+    { "speaker": "You", "percentage": 35, "duration": 420 },
+    { "speaker": "Speaker 2", "percentage": 45, "duration": 540 },
+    { "speaker": "Speaker 3", "percentage": 20, "duration": 240 }
   ]
 }
 ```
@@ -169,24 +177,39 @@ project/
 ---
 
 #### 2. **Response Delay** ⏱️
+
 **Question**: How long do you wait to respond after someone else finishes talking?
 
 **Data Source**: Audio transcript with precise timestamps
 
 **Implementation** (Audio-only):
+
 - Track timestamp when speaker finishes
 - Track timestamp when you start speaking
 - Calculate gap: `your_start_time - previous_speaker_end_time`
 - Analyze patterns: Are you interrupting? Waiting too long?
 
 **Output**:
+
 ```json
 {
   "averageResponseDelay": 1.2,
   "responseDelays": [
-    {"afterSpeaker": "Speaker 2", "delaySeconds": 0.5, "context": "Quick agreement"},
-    {"afterSpeaker": "Speaker 3", "delaySeconds": 2.1, "context": "Thoughtful response"},
-    {"afterSpeaker": "Speaker 2", "delaySeconds": -0.3, "context": "Interruption"}
+    {
+      "afterSpeaker": "Speaker 2",
+      "delaySeconds": 0.5,
+      "context": "Quick agreement"
+    },
+    {
+      "afterSpeaker": "Speaker 3",
+      "delaySeconds": 2.1,
+      "context": "Thoughtful response"
+    },
+    {
+      "afterSpeaker": "Speaker 2",
+      "delaySeconds": -0.3,
+      "context": "Interruption"
+    }
   ],
   "interruptions": 1,
   "insights": "You tend to interrupt Speaker 2. Consider waiting 1-2 seconds."
@@ -196,11 +219,13 @@ project/
 ---
 
 #### 3. **Eye Contact Quality** 👁️
+
 **Question**: How good is your eye contact during the meeting?
 
 **Data Source**: Video analysis (camera feed)
 
 **Implementation** (Requires video - NOT in audio-only prototype):
+
 - Use computer vision to detect face and gaze direction
 - Track when you're looking at camera vs away
 - Calculate percentage of time with "good" eye contact
@@ -209,11 +234,13 @@ project/
 **Status**: ❌ **NOT FEASIBLE with audio-only prototype**
 
 **Future Implementation**:
+
 - Would require video processing
 - Face detection + gaze estimation models
 - Compare to meeting context (presenting vs listening)
 
 **Output** (future):
+
 ```json
 {
   "eyeContactPercentage": 65,
@@ -228,11 +255,13 @@ project/
 ---
 
 #### 4. **Company Values Alignment** 🎯
+
 **Question**: Are you demonstrating/living according to company values?
 
 **Data Source**: Audio transcript + AI analysis
 
 **Implementation** (Audio-only with AI):
+
 - Define company values (e.g., "Collaboration", "Innovation", "Customer Focus")
   - For prototype: hardcode 3-5 common values
   - For production: user can configure their company's values
@@ -241,6 +270,7 @@ project/
 - Extract specific quotes/examples
 
 **Output**:
+
 ```json
 {
   "overallAlignment": 0.75,
@@ -255,17 +285,13 @@ project/
     },
     {
       "value": "Innovation",
-      "score": 0.70,
-      "examples": [
-        "You proposed a new solution: 'What if we tried using...'"
-      ]
+      "score": 0.7,
+      "examples": ["You proposed a new solution: 'What if we tried using...'"]
     },
     {
       "value": "Customer Focus",
-      "score": 0.60,
-      "examples": [
-        "You mentioned customer needs once during discussion"
-      ]
+      "score": 0.6,
+      "examples": ["You mentioned customer needs once during discussion"]
     }
   ],
   "insights": "Strong collaboration shown. Consider mentioning customer needs more often."
@@ -276,16 +302,17 @@ project/
 
 ### Summary: Feasibility with Audio-Only
 
-| Metric | Audio-Only? | Complexity | Priority for MVP |
-|--------|-------------|------------|------------------|
-| **Talk Time %** | ✅ Yes | Low | 🔥 High |
-| **Response Delay** | ✅ Yes | Medium | 🔥 High |
-| **Eye Contact** | ❌ No (needs video) | High | ⭐ Future V2 |
-| **Company Values** | ✅ Yes | Medium | 🔥 High |
+| Metric             | Audio-Only?         | Complexity | Priority for MVP |
+| ------------------ | ------------------- | ---------- | ---------------- |
+| **Talk Time %**    | ✅ Yes              | Low        | 🔥 High          |
+| **Response Delay** | ✅ Yes              | Medium     | 🔥 High          |
+| **Eye Contact**    | ❌ No (needs video) | High       | ⭐ Future V2     |
+| **Company Values** | ✅ Yes              | Medium     | 🔥 High          |
 
 ### Implementation Plan
 
 **Phase 1 (Audio-only prototype)**:
+
 1. ✅ Get basic transcription with Whisper
 2. ✅ Extract speaker diarization (who spoke when)
 3. ✅ Calculate talk time percentage
@@ -293,6 +320,7 @@ project/
 5. ✅ Use GPT-4 to analyze company values alignment
 
 **Phase 2 (After prototype works)**:
+
 - Add video analysis for eye contact
 - Improve speaker identification (names, not just "Speaker 1")
 - Add trends over time (track metrics across multiple meetings)
@@ -302,11 +330,13 @@ project/
 ## User Flow (Local Prototype)
 
 ### 1. Start App
+
 - Run `npm run dev` in terminal
 - Open `http://localhost:3000`
 - See upload section + list of previous recordings (from JSON file)
 
 ### 2. Upload Recording
+
 - Drag & drop video/audio file (or click to select)
 - Frontend:
   1. Validates file type and size (< 200MB)
@@ -319,6 +349,7 @@ project/
   4. Returns recording ID to frontend
 
 ### 3. Processing (Automatic)
+
 - `/api/process` runs in background:
   1. Reads file from `public/uploads/`
   2. Extracts audio if video (FFmpeg)
@@ -331,6 +362,7 @@ project/
 - **Processing time**: ~1-3 min for 10-min recording
 
 ### 4. View Intelligence
+
 - When status = "completed", recording card shows results
 - User clicks to expand inline
 - Shows:
@@ -339,7 +371,7 @@ project/
     - **Summary**: AI-generated overview of discussion
     - **Transcript**: Full text with timestamps
     - **Action Items**: Extracted tasks with priorities
-    - **Communication Metrics**: 
+    - **Communication Metrics**:
       - Talk time percentage (you vs others)
       - Response delays (how quickly you respond)
       - Company values alignment with examples
@@ -352,6 +384,7 @@ project/
   - Close and reopen to view again
 
 ### 5. Multiple Recordings
+
 - Upload more files - they all save to local filesystem
 - All recordings persist in `data/recordings.json`
 - Refresh page and they're still there
@@ -441,7 +474,7 @@ project/
       → Reads public/uploads/abc123.mp4
       → Extracts audio (FFmpeg if video)
       → Calls Whisper API (~30 sec)
-      → Calls GPT-4o-mini API (~15 sec)  
+      → Calls GPT-4o-mini API (~15 sec)
       → Writes data/intelligence/abc123.json
       → Updates data/recordings.json (status: "completed")
 
@@ -454,6 +487,7 @@ project/
 ```
 
 **Ultra-Simple Stack**:
+
 - ✅ **Frontend**: Next.js + TypeScript + Tailwind
 - ✅ **Backend**: Next.js API routes (Node.js)
 - ✅ **Storage**: Local filesystem (no S3, no Supabase)
@@ -466,6 +500,7 @@ project/
 ## Prototype Scope Decisions
 
 ### Included in Local Prototype:
+
 ✅ File upload (drag & drop)
 ✅ Save to local filesystem (`public/uploads/`)
 ✅ AI transcription (OpenAI Whisper with speaker diarization)
@@ -474,17 +509,19 @@ project/
 ✅ Key topics identification
 ✅ Sentiment analysis
 ✅ **Communication metrics** (audio-only):
-  - Talk time percentage (you vs others)
-  - Response delays (timing between speakers)
-  - Company values alignment analysis
-✅ Single-page interface
-✅ Video/audio playback
-✅ Transcript viewer with timestamps
-✅ Status polling
-✅ JSON file storage (no database)
-✅ Next.js API routes (no edge functions)
+
+- Talk time percentage (you vs others)
+- Response delays (timing between speakers)
+- Company values alignment analysis
+  ✅ Single-page interface
+  ✅ Video/audio playback
+  ✅ Transcript viewer with timestamps
+  ✅ Status polling
+  ✅ JSON file storage (no database)
+  ✅ Next.js API routes (no edge functions)
 
 ### Excluded from Prototype:
+
 ❌ User authentication
 ❌ Database (Supabase/Postgres)
 ❌ Cloud storage (S3/Supabase Storage)
@@ -501,6 +538,7 @@ project/
 ❌ **Video-based metrics** (facial expressions, body language)
 
 ### Add After Local Testing Works:
+
 1. Deploy to Vercel + Supabase
 2. Add authentication
 3. Replace JSON files with database
@@ -508,6 +546,7 @@ project/
 5. Polish UI/UX
 
 ### Future V2+ Features:
+
 - Chrome extension for live recording
 - Calendar integration
 - Auto-join meetings
@@ -526,8 +565,10 @@ project/
 ## Key Technical Challenges & Solutions
 
 ### Challenge 1: Large File Uploads
+
 **Problem**: Video files can be 100MB-1GB+, slow to upload
-**Solution**: 
+**Solution**:
+
 - Use Supabase Storage resumable uploads (handles interruptions)
 - Show real-time upload progress (percentage + speed)
 - Client-side validation (file size limit 500MB for MVP)
@@ -535,8 +576,10 @@ project/
 - Support common formats: MP4, WebM, MOV, MP3, WAV
 
 ### Challenge 2: Processing Time & User Experience
+
 **Problem**: Transcription + AI analysis takes 2-5 minutes, users might leave
 **Solution**:
+
 - Async processing with edge functions
 - Real-time status updates using Supabase Realtime subscriptions
 - Email notification when processing completes (optional)
@@ -544,8 +587,10 @@ project/
 - Allow users to navigate away and check back later
 
 ### Challenge 3: AI Processing Cost
+
 **Problem**: Transcription + GPT-4 calls are expensive (~$0.50-$2 per hour of audio)
 **Solution**:
+
 - Start with OpenAI Whisper (cheaper: $0.006/min = $0.36/hour)
 - Use GPT-4o-mini for analysis (cheaper than GPT-4)
 - Implement usage limits per user (e.g., 10 recordings/month free tier)
@@ -553,16 +598,20 @@ project/
 - Consider Deepgram as alternative (flat-rate pricing)
 
 ### Challenge 4: Audio Extraction from Video
+
 **Problem**: AI transcription services need audio-only files
 **Solution**:
+
 - Use FFmpeg in edge function to extract audio from video
 - Convert to standard format (MP3 or WAV)
 - Cache extracted audio to avoid re-processing
 - For audio-only uploads, skip this step
 
 ### Challenge 5: Privacy & Security
+
 **Problem**: Meeting recordings contain sensitive business information
 **Solution**:
+
 - Strict Row Level Security (RLS) policies on all tables
 - Storage bucket access restricted to authenticated users only
 - Presigned URLs with 1-hour expiry for video playback
@@ -572,8 +621,10 @@ project/
 - GDPR compliance: User can delete all data on demand
 
 ### Challenge 6: Transcript Accuracy
+
 **Problem**: AI transcription isn't perfect, especially with accents/jargon
 **Solution**:
+
 - Use highest-quality Whisper model (or Deepgram premium)
 - Display confidence scores (if available)
 - Allow manual editing of transcripts (future feature)
@@ -585,6 +636,7 @@ project/
 ## MVP Metrics for Success
 
 ### 1. Technical Metrics:
+
 - ✅ 95%+ successful uploads (no corruption/failures)
 - ✅ < 5 min processing time for 30-min recording
 - ✅ 90%+ transcription accuracy (Whisper standard)
@@ -592,6 +644,7 @@ project/
 - ✅ Real-time status updates work reliably
 
 ### 2. User Engagement:
+
 - 🎯 10+ beta users test the app
 - 🎯 Average 2+ uploads per user per week
 - 🎯 80%+ users view the intelligence report after upload
@@ -599,12 +652,14 @@ project/
 - 🎯 Return rate: 50%+ users come back within 7 days
 
 ### 3. Feature Usage:
+
 - 🎯 90%+ users successfully upload their first file
 - 🎯 70%+ users try the transcript viewer
 - 🎯 50%+ users download transcript or use action items
 - 🎯 30%+ users upload both video and audio files
 
 ### 4. Value Validation:
+
 - 🎯 User feedback: "Would you use this product?" → 70%+ say yes
 - 🎯 NPS Score: 30+ (good for MVP)
 - 🎯 Willingness to pay: 40%+ would pay $10-20/month
@@ -615,6 +670,7 @@ project/
 ## Development Phases (Ultra-Fast Local Prototype)
 
 ### Day 1: Setup (2-3 hours)
+
 **Goal**: Basic Next.js app running
 
 - Create Next.js project: `npx create-next-app@latest`
@@ -628,6 +684,7 @@ project/
 ---
 
 ### Day 2: Upload Flow (4-5 hours)
+
 **Goal**: Can upload and save files
 
 - Build upload component (drag & drop using `react-dropzone`)
@@ -643,6 +700,7 @@ project/
 ---
 
 ### Day 3: AI Processing (6-8 hours)
+
 **Goal**: Backend calls OpenAI APIs
 
 - Install FFmpeg locally (`brew install ffmpeg` on Mac)
@@ -660,6 +718,7 @@ project/
 ---
 
 ### Day 4: Display Intelligence (4-5 hours)
+
 **Goal**: Show AI results in UI
 
 - Create expandable recording card component
@@ -674,6 +733,7 @@ project/
 ---
 
 ### Day 5: Polish & Test (3-4 hours)
+
 **Goal**: Fix bugs, test with real recordings
 
 - Test with 2-3 real meeting recordings
@@ -691,26 +751,27 @@ project/
 
 ## Tech Stack Summary
 
-| Component | Technology | Purpose |
-|-----------|-----------|---------|
-| Frontend | Next.js 14 (App Router) | React framework |
-| UI Library | React 18 | Component library |
-| Styling | Tailwind CSS | Utility-first CSS |
-| Language | TypeScript | Type safety |
-| Backend | Next.js API Routes | Node.js serverless functions |
-| Storage | Local Filesystem | Store files in `public/uploads/` |
-| Database | JSON Files | Store data in `data/*.json` |
-| AI - Transcription | OpenAI Whisper API | Speech-to-text |
-| AI - Analysis | OpenAI GPT-4o-mini | Text analysis & summarization |
-| Video Processing | FFmpeg (local install) | Audio extraction |
-| Dev Server | Next.js Dev | `npm run dev` |
-| Environment | Node.js 18+ | Runtime |
+| Component          | Technology              | Purpose                          |
+| ------------------ | ----------------------- | -------------------------------- |
+| Frontend           | Next.js 14 (App Router) | React framework                  |
+| UI Library         | React 18                | Component library                |
+| Styling            | Tailwind CSS            | Utility-first CSS                |
+| Language           | TypeScript              | Type safety                      |
+| Backend            | Next.js API Routes      | Node.js serverless functions     |
+| Storage            | Local Filesystem        | Store files in `public/uploads/` |
+| Database           | JSON Files              | Store data in `data/*.json`      |
+| AI - Transcription | OpenAI Whisper API      | Speech-to-text                   |
+| AI - Analysis      | OpenAI GPT-4o-mini      | Text analysis & summarization    |
+| Video Processing   | FFmpeg (local install)  | Audio extraction                 |
+| Dev Server         | Next.js Dev             | `npm run dev`                    |
+| Environment        | Node.js 18+             | Runtime                          |
 
 ---
 
 ## Quick Start (Local Development Only)
 
 ### 1. Prerequisites
+
 ```bash
 # Install these first:
 - Node.js 18+ (https://nodejs.org)
@@ -719,6 +780,7 @@ project/
 ```
 
 ### 2. Create Next.js Project (5 min)
+
 ```bash
 # Create new Next.js app
 npx create-next-app@latest meeting-assistant --typescript --tailwind --app
@@ -733,6 +795,7 @@ npm install -D @types/fluent-ffmpeg @types/formidable
 ```
 
 ### 3. Setup Environment (2 min)
+
 ```bash
 # Create .env.local
 echo "OPENAI_API_KEY=sk-your-key-here" > .env.local
@@ -746,6 +809,7 @@ echo "[]" > data/recordings.json
 ```
 
 ### 4. Add to .gitignore
+
 ```bash
 # Add these lines to .gitignore
 public/uploads/
@@ -753,6 +817,7 @@ data/
 ```
 
 ### 5. Run Development Server
+
 ```bash
 npm run dev
 
@@ -760,6 +825,7 @@ npm run dev
 ```
 
 ### 6. Test the Flow
+
 ```bash
 1. Open http://localhost:3000
 2. Drag & drop a short meeting video (< 100MB)
@@ -769,6 +835,7 @@ npm run dev
 ```
 
 ### Project Structure
+
 ```
 meeting-assistant/
 ├── app/
@@ -797,22 +864,24 @@ meeting-assistant/
 ## Cost Estimation (Local Prototype)
 
 ### Development Cost:
+
 - **Infrastructure**: $0 (running locally)
 - **OpenAI API** (for testing):
   - Whisper transcription: $0.006/min
   - GPT-4o-mini: ~$0.15 per 1M input tokens, ~$0.60 per 1M output tokens
-  
+
 ### Example Test Costs:
+
 - **10-min audio recording**:
   - Whisper: $0.06 (10 min)
   - GPT-4o-mini: ~$0.02 (5K tokens)
   - **Total: ~$0.08 per test**
-  
 - **Testing budget** (10 test recordings):
   - ~$0.80 total for all testing
   - **Budget: < $2**
 
 ### If You Deploy Later:
+
 - Vercel: Free tier
 - Supabase: Free tier
 - OpenAI: Pay-as-you-go
@@ -823,6 +892,7 @@ meeting-assistant/
 ## Next Steps After MVP
 
 ### Immediate Improvements (V1.1):
+
 1. **Better error handling**: Show specific errors, retry options
 2. **Email notifications**: "Your recording is ready!"
 3. **Transcript editing**: Allow users to fix transcription errors
@@ -830,6 +900,7 @@ meeting-assistant/
 5. **Usage analytics**: Show user their stats (hours processed, words transcribed)
 
 ### Feature Additions (V2.0):
+
 1. **Chrome extension**: Record directly from browser
 2. **Calendar integration**: Auto-fetch meeting recordings
 3. **Team features**: Share recordings within organization
@@ -838,6 +909,7 @@ meeting-assistant/
 6. **Integrations**: Export action items to Notion, Asana, Linear
 
 ### Scale Improvements (V3.0):
+
 1. **Batch processing**: Process multiple files efficiently
 2. **Custom AI models**: Fine-tuned for your industry/terminology
 3. **Real-time transcription**: Show live captions during recording
@@ -852,6 +924,7 @@ meeting-assistant/
 This **local-first prototype** is the **absolute simplest** way to test if AI-generated meeting intelligence is actually useful. No deployment, no database, no auth—just run it on your machine and see if the AI delivers value.
 
 **Why start local?**
+
 - ✅ **Ultra-fast**: Build in 5 days (20-25 hours)
 - ✅ **Zero infrastructure**: No cloud setup, no deployment
 - ✅ **Minimal cost**: < $2 for all testing
@@ -860,6 +933,7 @@ This **local-first prototype** is the **absolute simplest** way to test if AI-ge
 - ✅ **No commitments**: If it doesn't work, you've only spent a weekend
 
 **What you'll learn:**
+
 1. Is Whisper transcription (with speaker diarization) accurate enough?
 2. Are GPT-4o-mini's action items useful?
 3. Are the communication metrics (talk time, response delays) insightful?
@@ -890,6 +964,7 @@ This **local-first prototype** is the **absolute simplest** way to test if AI-ge
 ```
 
 **This prototype answers ONE question:**
+
 > "If I upload a meeting recording, does the AI generate useful insights that save me time?"
 
 If yes → build more. If no → stop or pivot. That's it.
@@ -911,7 +986,8 @@ Day 4 (5h):  Display intelligence in UI
 Day 5 (3h):  Test with real recordings + fix bugs
 ```
 
-**Budget**: 
+**Budget**:
+
 - Infrastructure: $0
 - OpenAI API: < $2
 - **Total: ~$2**

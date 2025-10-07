@@ -21,6 +21,7 @@ This workflow automatically runs on every pull request to ensure code quality an
 Before pushing your PR, you can run these checks locally:
 
 #### Frontend:
+
 ```bash
 cd frontend
 npm run lint          # Check for linting errors
@@ -29,6 +30,7 @@ npm run format        # Auto-fix formatting
 ```
 
 #### Backend:
+
 ```bash
 cd supabase-backend
 npm run format:check  # Check formatting
@@ -36,6 +38,7 @@ npm run format        # Auto-fix formatting
 ```
 
 #### Root-level (all files):
+
 ```bash
 prettier --check "**/*.{ts,tsx,js,jsx,json,css,md}"  # Check formatting
 prettier --write "**/*.{ts,tsx,js,jsx,json,css,md}"  # Auto-fix formatting
@@ -47,4 +50,3 @@ prettier --write "**/*.{ts,tsx,js,jsx,json,css,md}"  # Auto-fix formatting
 - 🎯 **Focused**: Provides feedback only on code you modified
 - 🔄 **Consistent**: Ensures all team members follow the same code style
 - 💬 **Helpful**: Provides clear feedback when checks fail
-

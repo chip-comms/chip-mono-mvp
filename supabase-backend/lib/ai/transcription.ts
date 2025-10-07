@@ -1,9 +1,9 @@
 /**
  * Transcription Module
- * 
+ *
  * PORTABLE: This module uses only OpenAI APIs and standard JavaScript.
  * It will work unchanged in both Node.js and Deno.
- * 
+ *
  * No filesystem access, no Node.js-specific APIs.
  */
 
@@ -12,7 +12,7 @@ import type { Transcript, TranscriptSegment } from '../types';
 
 /**
  * Transcribe audio using OpenAI Whisper API
- * 
+ *
  * @param audioFile - Audio file as Blob or File
  * @param apiKey - OpenAI API key
  * @returns Structured transcript with speaker diarization
@@ -60,7 +60,7 @@ export async function transcribeAudio(
         }
 
         // Check for speaker change (based on pause duration)
-        const pause = nextWord ? (nextWord.start - word.end) : 0;
+        const pause = nextWord ? nextWord.start - word.end : 0;
         if (pause > PAUSE_THRESHOLD && nextWord) {
           // Complete current segment
           currentSegment.end = word.end;
@@ -141,7 +141,10 @@ function formatTimestamp(seconds: number): string {
 /**
  * Get transcript text for a specific speaker
  */
-export function getSpeakerText(transcript: Transcript, speaker: string): string {
+export function getSpeakerText(
+  transcript: Transcript,
+  speaker: string
+): string {
   return transcript.segments
     .filter((s) => s.speaker === speaker)
     .map((s) => s.text)
@@ -151,9 +154,11 @@ export function getSpeakerText(transcript: Transcript, speaker: string): string 
 /**
  * Calculate total duration for a specific speaker
  */
-export function getSpeakerDuration(transcript: Transcript, speaker: string): number {
+export function getSpeakerDuration(
+  transcript: Transcript,
+  speaker: string
+): number {
   return transcript.segments
     .filter((s) => s.speaker === speaker)
     .reduce((total, segment) => total + (segment.end - segment.start), 0);
 }
-

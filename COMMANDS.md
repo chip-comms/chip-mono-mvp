@@ -5,6 +5,7 @@ This is a monorepo with workspace support. You can run commands from the root di
 ## 🚀 Quick Start
 
 ### Initial Setup
+
 ```bash
 # Install all dependencies (root + workspaces)
 npm install
@@ -18,18 +19,21 @@ npm run install:all
 Run these commands from the **root directory** to check/fix all files:
 
 ### Format All Files
+
 ```bash
 npm run format              # Auto-fix formatting in all files
 npm run format:check        # Check formatting without fixing
 ```
 
 ### Format Specific Workspace
+
 ```bash
 npm run format:frontend     # Format frontend only
 npm run format:backend      # Format backend only
 ```
 
 ### Lint
+
 ```bash
 npm run lint               # Lint ALL workspaces (frontend + backend)
 npm run lint:frontend      # Lint frontend only
@@ -39,6 +43,7 @@ npm run lint:backend       # Lint backend only
 ## 🔧 Development Commands
 
 ### Frontend
+
 ```bash
 npm run dev:frontend       # Start frontend dev server
 npm run build:frontend     # Build frontend for production
@@ -52,6 +57,7 @@ npm run format
 ```
 
 ### Backend
+
 ```bash
 cd supabase-backend
 npm run format
@@ -82,4 +88,3 @@ git push
 ```
 
 The GitHub Actions workflow will automatically verify formatting and linting on your PR! ✨
-

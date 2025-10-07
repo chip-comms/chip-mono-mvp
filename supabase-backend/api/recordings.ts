@@ -1,6 +1,6 @@
 /**
  * Recordings List API Route
- * 
+ *
  * Returns list of all recordings with their status.
  * This will be moved to frontend/app/api/recordings/route.ts when ready.
  */
@@ -11,7 +11,7 @@ import type { RecordingsResponse } from '../lib/types';
 
 const data = new LocalDataAdapter();
 
-export async function GET(req: NextRequest) {
+export async function GET(_req: NextRequest) {
   try {
     // Initialize data adapter if needed
     await data.initialize();
@@ -34,10 +34,10 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(
       {
         recordings: [],
-        error: error instanceof Error ? error.message : 'Failed to fetch recordings',
+        error:
+          error instanceof Error ? error.message : 'Failed to fetch recordings',
       },
       { status: 500 }
     );
   }
 }
-

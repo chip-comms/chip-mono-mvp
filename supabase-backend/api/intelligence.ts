@@ -1,6 +1,6 @@
 /**
  * Intelligence API Route
- * 
+ *
  * Returns intelligence data for a specific recording.
  * This will be moved to frontend/app/api/intelligence/[id]/route.ts when ready.
  */
@@ -13,7 +13,7 @@ const data = new LocalDataAdapter();
 
 /**
  * GET /api/intelligence/[id]
- * 
+ *
  * In Next.js, you'll need to extract the ID from the route params:
  * export async function GET(req: NextRequest, { params }: { params: { id: string } })
  */
@@ -45,10 +45,12 @@ export async function GET(req: NextRequest, recordingId: string) {
     return NextResponse.json(
       {
         intelligence: null,
-        error: error instanceof Error ? error.message : 'Failed to fetch intelligence',
+        error:
+          error instanceof Error
+            ? error.message
+            : 'Failed to fetch intelligence',
       },
       { status: 500 }
     );
   }
 }
-

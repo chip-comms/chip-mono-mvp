@@ -1,14 +1,12 @@
 /**
  * Upload API Route
- * 
+ *
  * Handles file uploads and saves them to storage.
  * This will be moved to frontend/app/api/upload/route.ts when ready.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { v4 as uuidv4 } from 'uuid';
-import formidable from 'formidable';
-import { IncomingMessage } from 'http';
 import { LocalStorageAdapter } from '../lib/storage/local';
 import { LocalDataAdapter } from '../lib/data/local';
 import type { Recording } from '../lib/types';
@@ -66,7 +64,7 @@ export async function POST(req: NextRequest) {
     const buffer = new Uint8Array(arrayBuffer);
 
     // Save file to storage
-    const filePath = await storage.saveFile(recordingId, buffer, file.type);
+    await storage.saveFile(recordingId, buffer, file.type);
 
     // Create recording record
     const recording: Recording = {
@@ -125,4 +123,3 @@ async function processRecordingAsync(recordingId: string) {
     });
   }
 }
-

@@ -16,6 +16,7 @@ npm install
 ```
 
 This installs:
+
 - `openai` - OpenAI API client
 - `fluent-ffmpeg` - Audio extraction
 - `formidable` - File upload parsing
@@ -105,6 +106,7 @@ npm run dev
 This starts the Next.js dev server on `http://localhost:3000`
 
 **That's it!** The Next.js server will:
+
 - ✅ Serve the React frontend
 - ✅ Run the API routes (which use the backend logic)
 - ✅ Handle file uploads
@@ -133,6 +135,7 @@ npm run dev
 ```
 
 You should see:
+
 ```
 > next dev
   ▲ Next.js 14.x.x
@@ -150,8 +153,9 @@ curl http://localhost:3000/api/recordings
 ```
 
 Should return:
+
 ```json
-{"recordings":[]}
+{ "recordings": [] }
 ```
 
 ### 3. Upload a Test File
@@ -163,8 +167,9 @@ curl -X POST http://localhost:3000/api/upload \
 ```
 
 Should return:
+
 ```json
-{"success":true,"recordingId":"abc-123-..."}
+{ "success": true, "recordingId": "abc-123-..." }
 ```
 
 ---
@@ -222,11 +227,13 @@ Then restart the dev server.
 ### Issue: "FFmpeg not found"
 
 **Solution**: Install FFmpeg:
+
 ```bash
 brew install ffmpeg  # macOS
 ```
 
 Verify installation:
+
 ```bash
 ffmpeg -version
 ```
@@ -236,6 +243,7 @@ ffmpeg -version
 ### Issue: "OpenAI API key not found"
 
 **Solution**: Create `frontend/.env.local`:
+
 ```bash
 OPENAI_API_KEY=sk-your-key-here
 ```
@@ -247,6 +255,7 @@ Restart the dev server after adding env vars.
 ### Issue: "ENOENT: no such file or directory"
 
 **Solution**: Create required directories:
+
 ```bash
 mkdir -p public/uploads
 mkdir -p ../supabase-backend/storage/uploads
@@ -268,6 +277,7 @@ vim supabase-backend/lib/ai/transcription.ts
 ### 2. Restart Next.js Server
 
 Next.js hot reload should pick up changes, but if not:
+
 ```bash
 # Stop server (Ctrl+C)
 # Start again
@@ -358,4 +368,3 @@ See `supabase-backend/API_DOCUMENTATION.md` for migration guide.
 7. ✅ View in browser at http://localhost:3000
 
 **You're ready to build!** 🚀
-

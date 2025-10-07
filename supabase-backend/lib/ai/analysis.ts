@@ -1,6 +1,6 @@
 /**
  * Analysis Module
- * 
+ *
  * PORTABLE: Uses only OpenAI APIs and standard JavaScript.
  * Works unchanged in both Node.js and Deno.
  */
@@ -28,10 +28,14 @@ export async function analyzeTranscript(
   transcript: Transcript,
   apiKey: string,
   companyValues: string[] = []
-): Promise<AnalysisResult & { companyValuesAlignment?: {
-  overallAlignment: number;
-  values: CompanyValue[];
-} }> {
+): Promise<
+  AnalysisResult & {
+    companyValuesAlignment?: {
+      overallAlignment: number;
+      values: CompanyValue[];
+    };
+  }
+> {
   const openai = new OpenAI({ apiKey });
 
   // Prepare the transcript text
@@ -101,14 +105,18 @@ Respond in JSON format:
     // Validate and structure the response
     const result: AnalysisResult = {
       summary: analysis.summary || 'No summary available',
-      actionItems: (analysis.actionItems || []).map((item: any) => ({
-        text: item.text,
-        priority: item.priority || 'medium',
-      })),
-      keyTopics: (analysis.keyTopics || []).map((topic: any) => ({
-        topic: topic.topic,
-        relevance: topic.relevance || 0.5,
-      })),
+      actionItems: (analysis.actionItems || []).map(
+        (item: { text: string; priority?: string }) => ({
+          text: item.text,
+          priority: item.priority || 'medium',
+        })
+      ),
+      keyTopics: (analysis.keyTopics || []).map(
+        (topic: { topic: string; relevance?: number }) => ({
+          topic: topic.topic,
+          relevance: topic.relevance || 0.5,
+        })
+      ),
       sentiment: {
         overall: analysis.sentiment?.overall || 'neutral',
         score: analysis.sentiment?.score || 0,
@@ -187,11 +195,13 @@ Respond in JSON format:
     }
 
     const analysis = JSON.parse(content);
-    const values: CompanyValue[] = (analysis.values || []).map((v: any) => ({
-      value: v.value,
-      score: v.score || 0,
-      examples: v.examples || [],
-    }));
+    const values: CompanyValue[] = (analysis.values || []).map(
+      (v: { value: string; score?: number; examples?: string[] }) => ({
+        value: v.value,
+        score: v.score || 0,
+        examples: v.examples || [],
+      })
+    );
 
     // Calculate overall alignment (average of all scores)
     const overallAlignment =
@@ -258,4 +268,3 @@ Provide constructive, specific feedback in 2-3 sentences.`,
     return 'Unable to generate insights at this time.';
   }
 }
-

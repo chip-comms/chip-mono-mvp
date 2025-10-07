@@ -28,6 +28,7 @@ Upload a video or audio file for processing.
 **Content-Type**: `multipart/form-data`
 
 **Request Body**:
+
 ```typescript
 FormData {
   file: File;           // Video or audio file
@@ -36,6 +37,7 @@ FormData {
 ```
 
 **Supported File Types**:
+
 - `video/mp4`
 - `video/webm`
 - `video/quicktime` (.mov)
@@ -46,6 +48,7 @@ FormData {
 **Max File Size**: 200MB
 
 **Response**:
+
 ```typescript
 {
   success: boolean;
@@ -55,11 +58,13 @@ FormData {
 ```
 
 **Status Codes**:
+
 - `200` - Success
 - `400` - Invalid request (bad file type, too large, etc.)
 - `500` - Server error
 
 **Example**:
+
 ```typescript
 const formData = new FormData();
 formData.append('file', fileBlob);
@@ -85,6 +90,7 @@ Retrieve list of all recordings with their status.
 **Request**: No body
 
 **Response**:
+
 ```typescript
 {
   recordings: Recording[];
@@ -105,10 +111,12 @@ interface Recording {
 ```
 
 **Status Codes**:
+
 - `200` - Success (even if recordings array is empty)
 - `500` - Server error
 
 **Example**:
+
 ```typescript
 const response = await fetch('/api/recordings');
 const data = await response.json();
@@ -130,11 +138,13 @@ Retrieve AI-generated intelligence for a specific recording.
 **Endpoint**: `GET /api/intelligence/[id]`
 
 **URL Parameters**:
+
 - `id` - Recording ID (UUID)
 
 **Request**: No body
 
 **Response**:
+
 ```typescript
 {
   intelligence: Intelligence | null;
@@ -216,11 +226,13 @@ interface CompanyValue {
 ```
 
 **Status Codes**:
+
 - `200` - Success (check if intelligence is null)
 - `404` - Intelligence not found (recording not yet processed)
 - `500` - Server error
 
 **Example**:
+
 ```typescript
 const response = await fetch(`/api/intelligence/${recordingId}`);
 const { intelligence, error } = await response.json();
@@ -229,7 +241,10 @@ if (intelligence) {
   // Display intelligence
   console.log('Summary:', intelligence.summary);
   console.log('Action Items:', intelligence.actionItems);
-  console.log('Talk Time:', intelligence.communicationMetrics.talkTimePercentage + '%');
+  console.log(
+    'Talk Time:',
+    intelligence.communicationMetrics.talkTimePercentage + '%'
+  );
 }
 ```
 
@@ -242,13 +257,15 @@ This endpoint is called automatically by the upload endpoint. You typically don'
 **Endpoint**: `POST /api/process`
 
 **Request Body**:
+
 ```typescript
 {
-  recordingId: string;  // UUID of recording to process
+  recordingId: string; // UUID of recording to process
 }
 ```
 
 **Response**:
+
 ```typescript
 {
   success: boolean;
@@ -313,11 +330,11 @@ async function handleUpload(file: File) {
   try {
     // Upload
     const recordingId = await uploadRecording(file);
-    
+
     // Poll until completed
     const stopPolling = pollRecordings((recordings) => {
-      const recording = recordings.find(r => r.id === recordingId);
-      
+      const recording = recordings.find((r) => r.id === recordingId);
+
       if (recording?.status === 'completed') {
         stopPolling();
         // Fetch and display intelligence
@@ -397,6 +414,7 @@ All endpoints follow this error response format:
 ```
 
 Common errors:
+
 - `"No file provided"` - Upload without file
 - `"Unsupported file type: ..."` - Wrong file format
 - `"File too large. Max size: 200MB"` - File exceeds limit
@@ -410,22 +428,26 @@ Common errors:
 ## Performance Considerations
 
 ### Processing Time
+
 - **Audio (10 min)**: ~1-2 minutes
 - **Video (10 min)**: ~2-3 minutes (includes audio extraction)
 - **Video (30 min)**: ~5-7 minutes
 
 Processing includes:
+
 1. Audio extraction (if video): 10-30 seconds
 2. Whisper transcription: 30-60 seconds
 3. GPT-4 analysis: 15-30 seconds
 4. Metrics calculation: < 1 second
 
 ### Polling Strategy
+
 - Poll `/api/recordings` every 3 seconds
 - Stop polling when status is `completed` or `failed`
 - Consider exponential backoff for long-running processes
 
 ### File Size Limits
+
 - Current limit: 200MB
 - Recommended: < 100MB for best performance
 - Large files take longer to upload and process
@@ -446,6 +468,7 @@ const videoUrl = `/uploads/${recording.id}.mp4`;
 ```
 
 **Note**: In production with Supabase, you'll need to:
+
 1. Generate presigned URLs
 2. Use Supabase Storage URLs
 3. Set appropriate CORS headers
@@ -496,7 +519,7 @@ OPENAI_API_KEY=sk-your-key-here
 When migrating, these endpoints will become:
 
 - `POST /api/upload` → Supabase Edge Function `upload`
-- `POST /api/process` → Supabase Edge Function `process`  
+- `POST /api/process` → Supabase Edge Function `process`
 - `GET /api/recordings` → Supabase Edge Function `list-recordings`
 - `GET /api/intelligence/[id]` → Supabase Edge Function `get-intelligence`
 
@@ -507,7 +530,7 @@ The **request/response formats stay the same**, only the base URL changes!
 ## Support
 
 For issues or questions about the API:
+
 1. Check `supabase-backend/lib/types.ts` for complete type definitions
 2. Review `supabase-backend/api/` for implementation details
 3. See `BUILD_STATUS.md` for current implementation status
-

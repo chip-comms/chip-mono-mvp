@@ -1,6 +1,6 @@
 /**
  * Communication Metrics Module
- * 
+ *
  * PORTABLE: Pure JavaScript calculations, no I/O.
  * Works unchanged in both Node.js and Deno.
  */
@@ -21,11 +21,11 @@ export function calculateCommunicationMetrics(
 ): Omit<CommunicationMetrics, 'companyValuesAlignment' | 'insights'> {
   // Calculate speaker stats
   const speakerBreakdown = calculateSpeakerStats(transcript);
-  
+
   // Calculate talk time percentage for user
-  const userStats = speakerBreakdown.find(s => s.speaker === userSpeaker);
+  const userStats = speakerBreakdown.find((s) => s.speaker === userSpeaker);
   const talkTimePercentage = userStats?.percentage || 0;
-  
+
   // Calculate response delays
   const { delays, avgDelay, interruptions } = calculateResponseDelays(
     transcript,
@@ -89,9 +89,12 @@ export function calculateResponseDelays(
     const currSegment = transcript.segments[i];
 
     // Only track when user is speaking
-    if (currSegment.speaker === userSpeaker && prevSegment.speaker !== userSpeaker) {
+    if (
+      currSegment.speaker === userSpeaker &&
+      prevSegment.speaker !== userSpeaker
+    ) {
       const delay = currSegment.start - prevSegment.end;
-      
+
       // Categorize the delay
       let context: string | undefined;
       if (delay < 0) {
@@ -142,7 +145,7 @@ export function analyzeTurnTaking(transcript: Transcript): {
     };
   }
 
-  const durations = transcript.segments.map(s => ({
+  const durations = transcript.segments.map((s) => ({
     speaker: s.speaker,
     duration: s.end - s.start,
   }));
@@ -150,11 +153,11 @@ export function analyzeTurnTaking(transcript: Transcript): {
   const totalDuration = durations.reduce((sum, d) => sum + d.duration, 0);
   const avgTurnDuration = totalDuration / durations.length;
 
-  const longest = durations.reduce((max, d) => 
+  const longest = durations.reduce((max, d) =>
     d.duration > max.duration ? d : max
   );
 
-  const shortest = durations.reduce((min, d) => 
+  const shortest = durations.reduce((min, d) =>
     d.duration < min.duration ? d : min
   );
 
@@ -175,11 +178,15 @@ export function analyzeTurnTaking(transcript: Transcript): {
 /**
  * Calculate words per minute for each speaker
  */
-export function calculateWordsPerMinute(transcript: Transcript): Map<string, number> {
+export function calculateWordsPerMinute(
+  transcript: Transcript
+): Map<string, number> {
   const wpmMap = new Map<string, number>();
 
   for (const speaker of transcript.speakers) {
-    const speakerSegments = transcript.segments.filter(s => s.speaker === speaker);
+    const speakerSegments = transcript.segments.filter(
+      (s) => s.speaker === speaker
+    );
     const totalWords = speakerSegments.reduce(
       (sum, s) => sum + s.text.split(/\s+/).length,
       0
@@ -231,4 +238,3 @@ export function getSpeakingOrder(transcript: Transcript): string[] {
 
   return order;
 }
-

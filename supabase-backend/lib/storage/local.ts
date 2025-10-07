@@ -1,6 +1,6 @@
 /**
  * Local Filesystem Storage Adapter
- * 
+ *
  * I/O LAYER: Node.js specific, will need rewriting for Deno/Supabase.
  * Implements the StorageAdapter interface for local development.
  */
@@ -118,4 +118,3 @@ export class LocalStorageAdapter implements StorageAdapter {
     return path.join(this.baseDir, `${id}${extension}`);
   }
 }
-

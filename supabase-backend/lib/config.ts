@@ -12,9 +12,9 @@ export const config: Config = {
     'video/mp4',
     'video/webm',
     'video/quicktime', // .mov
-    'audio/mpeg',      // .mp3
+    'audio/mpeg', // .mp3
     'audio/wav',
-    'audio/mp4',       // .m4a
+    'audio/mp4', // .m4a
   ],
   // Default company values for prototype
   // In production, users would configure their own values
@@ -52,4 +52,3 @@ export function validateConfig(): { valid: boolean; errors: string[] } {
     errors,
   };
 }
-

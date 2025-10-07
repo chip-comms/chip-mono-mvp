@@ -55,11 +55,13 @@ The backend code is imported by Next.js API routes in the frontend application. 
 When ready to deploy, convert the API routes to Edge Functions:
 
 ### What Stays the Same
+
 - ✅ All `lib/ai/*` modules (100% portable)
 - ✅ `lib/types.ts` (shared types)
 - ✅ `lib/config.ts` (just update env vars)
 
 ### What Changes
+
 - 🔄 `lib/storage/local.ts` → Create `lib/storage/supabase.ts`
 - 🔄 `lib/data/local.ts` → Create `lib/data/supabase.ts`
 - 🔄 API routes → Edge Functions (different syntax, same logic)
@@ -82,7 +84,10 @@ const audioFile = new File([buffer], 'test.mp3', { type: 'audio/mpeg' });
 const transcript = await transcribeAudio(audioFile, process.env.OPENAI_API_KEY);
 
 // Analyze
-const analysis = await analyzeTranscript(transcript, process.env.OPENAI_API_KEY);
+const analysis = await analyzeTranscript(
+  transcript,
+  process.env.OPENAI_API_KEY
+);
 
 // Calculate metrics
 const metrics = calculateCommunicationMetrics(transcript);
@@ -95,4 +100,3 @@ console.log({ transcript, analysis, metrics });
 - `openai` - OpenAI API client
 - `fluent-ffmpeg` - FFmpeg wrapper for audio extraction
 - Standard Node.js `fs`, `path` modules (will be replaced for Deno)
-

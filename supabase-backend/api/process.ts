@@ -1,6 +1,6 @@
 /**
  * Process Recording API Route
- * 
+ *
  * Processes uploaded recordings through the AI pipeline.
  * This will be moved to frontend/app/api/process/route.ts when ready.
  */
@@ -13,8 +13,14 @@ import os from 'os';
 import { LocalStorageAdapter } from '../lib/storage/local';
 import { LocalDataAdapter } from '../lib/data/local';
 import { transcribeAudio } from '../lib/ai/transcription';
-import { analyzeTranscript, generateCommunicationInsights } from '../lib/ai/analysis';
-import { calculateCommunicationMetrics, calculateSpeakerStats } from '../lib/ai/metrics';
+import {
+  analyzeTranscript,
+  generateCommunicationInsights,
+} from '../lib/ai/analysis';
+import {
+  calculateCommunicationMetrics,
+  calculateSpeakerStats,
+} from '../lib/ai/metrics';
 import type { Intelligence } from '../lib/types';
 import { config } from '../lib/config';
 
@@ -72,7 +78,9 @@ export async function POST(req: NextRequest) {
     // Step 1: Transcribe audio
     console.log(`[${recordingId}] Transcribing audio...`);
     const transcript = await transcribeAudio(audioFile, config.openaiApiKey);
-    console.log(`[${recordingId}] Transcription complete. Duration: ${transcript.durationSeconds}s, Speakers: ${transcript.speakers.length}`);
+    console.log(
+      `[${recordingId}] Transcription complete. Duration: ${transcript.durationSeconds}s, Speakers: ${transcript.speakers.length}`
+    );
 
     // Update recording duration
     await data.updateRecording(recordingId, {
@@ -86,7 +94,9 @@ export async function POST(req: NextRequest) {
       config.openaiApiKey,
       config.companyValues
     );
-    console.log(`[${recordingId}] Analysis complete. Action items: ${analysis.actionItems.length}, Topics: ${analysis.keyTopics.length}`);
+    console.log(
+      `[${recordingId}] Analysis complete. Action items: ${analysis.actionItems.length}, Topics: ${analysis.keyTopics.length}`
+    );
 
     // Step 3: Calculate communication metrics
     console.log(`[${recordingId}] Calculating communication metrics...`);
@@ -146,7 +156,8 @@ export async function POST(req: NextRequest) {
     if (recordingId) {
       await data.updateRecording(recordingId, {
         status: 'failed',
-        processingError: error instanceof Error ? error.message : 'Processing failed',
+        processingError:
+          error instanceof Error ? error.message : 'Processing failed',
       });
     }
 
@@ -219,4 +230,3 @@ async function extractAudio(
     }
   });
 }
-
