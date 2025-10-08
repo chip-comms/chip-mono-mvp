@@ -19,7 +19,7 @@ import {
   calculateCommunicationMetrics,
   calculateSpeakerStats,
 } from '@/supabase-backend/lib/ai/metrics';
-import type { Intelligence } from '@/supabase-backend/lib/types';
+import type { Intelligence, Transcript } from '@/supabase-backend/lib/types';
 import { config } from '@/supabase-backend/lib/config';
 
 const storage = new LocalStorageAdapter();
@@ -108,7 +108,7 @@ export async function POST(req: NextRequest) {
 
     // Step 1: Transcribe audio (with caching for sample files)
     console.log(`[${recordingId}] Transcribing audio...`);
-    let transcript: any;
+    let transcript: Transcript;
 
     const sampleId = sampleFileId || recording.sampleFileId;
     if (sampleId) {
@@ -291,14 +291,14 @@ async function extractAudio(
  */
 async function checkForExistingTranscript(
   sampleId: string
-): Promise<any | null> {
+): Promise<Transcript | null> {
   try {
     // Use the data adapter to look for existing intelligence with this sample ID
     // We'll store transcripts as a special "transcript-only" intelligence entry
     const transcriptKey = `transcript-${sampleId}`;
     const cachedIntelligence = await data.getIntelligence(transcriptKey);
     return cachedIntelligence?.transcript || null;
-  } catch (error) {
+  } catch (_error) {
     // If error reading cache, just return null (will re-transcribe)
     return null;
   }
@@ -309,7 +309,7 @@ async function checkForExistingTranscript(
  */
 async function cacheTranscript(
   sampleId: string,
-  transcript: any
+  transcript: Transcript
 ): Promise<void> {
   try {
     const transcriptKey = `transcript-${sampleId}`;

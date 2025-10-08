@@ -160,18 +160,17 @@ export class PythonBackendClient {
   }> {
     const formData = new FormData();
     formData.append('file', audioFile);
-    if (options.language)
-      formData.append('language', options.language);
+    if (options.language) formData.append('language', options.language);
     if (options.enableWordTimestamps !== undefined)
-      formData.append('enable_word_timestamps', options.enableWordTimestamps.toString());
+      formData.append(
+        'enable_word_timestamps',
+        options.enableWordTimestamps.toString()
+      );
 
-    const response = await fetch(
-      `${PYTHON_BACKEND_URL}/api/audio/transcribe`,
-      {
-        method: 'POST',
-        body: formData,
-      }
-    );
+    const response = await fetch(`${PYTHON_BACKEND_URL}/api/audio/transcribe`, {
+      method: 'POST',
+      body: formData,
+    });
 
     if (!response.ok) {
       const error = await response.json();

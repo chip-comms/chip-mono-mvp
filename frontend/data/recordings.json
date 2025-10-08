@@ -66,5 +66,27 @@
     "createdAt": "2025-10-08T00:34:18.169Z",
     "sampleFileId": "sample-beau-lauren-2024-06-20",
     "durationSeconds": 1581.8
+  },
+  {
+    "id": "ad85a14f-1f36-4db4-8f3c-7652f9f64ef0",
+    "title": "Sample: Beau_Lauren (2024-06-20 15_06 GMT-4).mp4",
+    "filename": "Beau_Lauren (2024-06-20 15_06 GMT-4).mp4",
+    "fileType": "video/mp4",
+    "fileSizeBytes": 393109800,
+    "status": "completed",
+    "createdAt": "2025-10-08T01:18:34.034Z",
+    "sampleFileId": "sample-beau-lauren-2024-06-20",
+    "durationSeconds": 1581.8
+  },
+  {
+    "id": "723d2874-7e06-4a50-8623-9f34a316d76f",
+    "title": "Sample: Beau_Lauren (2024-06-20 15_06 GMT-4).mp4",
+    "filename": "Beau_Lauren (2024-06-20 15_06 GMT-4).mp4",
+    "fileType": "video/mp4",
+    "fileSizeBytes": 393109800,
+    "status": "completed",
+    "createdAt": "2025-10-08T01:19:01.395Z",
+    "sampleFileId": "sample-beau-lauren-2024-06-20",
+    "durationSeconds": 1581.8
   }
 ]

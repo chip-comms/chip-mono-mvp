@@ -31,7 +31,7 @@ function getAIAdapter(config: Config): AIAdapter {
  */
 export async function analyzeTranscript(
   transcript: Transcript,
-  apiKey: string, // Kept for backward compatibility but not used
+  _apiKey: string, // Kept for backward compatibility but not used
   companyValues: string[] = []
 ): Promise<AnalysisResult> {
   // Get config from environment (this is a bit of a hack for backward compatibility)
@@ -58,7 +58,7 @@ export async function generateCommunicationInsights(
   transcript: Transcript,
   talkTimePercentage: number,
   interruptions: number,
-  apiKey: string // Kept for backward compatibility but not used
+  _apiKey: string // Kept for backward compatibility but not used
 ): Promise<string> {
   // Get config from environment
   const config: Config = {

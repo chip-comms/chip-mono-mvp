@@ -4,6 +4,16 @@ import os
 from pathlib import Path
 from pydantic_settings import BaseSettings
 from typing import Literal
+from dotenv import load_dotenv
+
+# Load environment variables from .env.local first, then .env
+env_local = Path(__file__).parent.parent / ".env.local"
+env_file = Path(__file__).parent.parent / ".env"
+
+if env_local.exists():
+    load_dotenv(env_local)
+elif env_file.exists():
+    load_dotenv(env_file)
 
 
 class Settings(BaseSettings):
@@ -21,10 +31,7 @@ class Settings(BaseSettings):
     max_file_size: int = int(os.getenv("MAX_FILE_SIZE", "500"))  # MB
     
     # CORS
-    cors_origins: list[str] = os.getenv(
-        "CORS_ORIGINS", 
-        "http://localhost:3000"
-    ).split(",")
+    cors_origins: str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
     
     # AI Provider Configuration
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")

@@ -6,7 +6,7 @@ Status: 📋 BACKLOG
 Analyzes vocal characteristics like pitch, pace, and energy.
 """
 
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 import logging
 

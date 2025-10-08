@@ -1,5 +1,5 @@
 {
-  "recordingId": "transcript-sample-beau-lauren-2024-06-20",
+  "recordingId": "723d2874-7e06-4a50-8623-9f34a316d76f",
   "transcript": {
     "segments": [
       {
@@ -3643,25 +3643,110 @@
     "durationSeconds": 1581.8,
     "speakers": ["Speaker 1"]
   },
-  "summary": "Cached transcript only",
-  "actionItems": [],
-  "keyTopics": [],
+  "summary": "The meeting focuses on P1's frustration with limited growth at Florence and their exploration of a startup idea centered on automating user research documentation and analysis using AI/CRM. P2 provided valuable competitive intelligence on existing tools (Dovetail, Maze) and offered strategic career advice, suggesting P1 should pivot their professional identity to User Research rather than Product Strategy.",
+  "actionItems": [
+    {
+      "text": "P1 to research Maze and the new AI-based competitive analysis tool mentioned by P2 and request the links.",
+      "priority": "high"
+    },
+    {
+      "text": "P1 to adjust professional positioning and resume to focus on User Research expertise rather than Product Strategy.",
+      "priority": "high"
+    },
+    {
+      "text": "P1 to seek P2's opinion on updated resume/positioning.",
+      "priority": "medium"
+    }
+  ],
+  "keyTopics": [
+    {
+      "topic": "Career transition and job seeking advice",
+      "relevance": 0.9
+    },
+    {
+      "topic": "User research automation and startup ideation",
+      "relevance": 0.85
+    },
+    {
+      "topic": "User research tools and competitive landscape (Dovetail, Maze)",
+      "relevance": 0.8
+    },
+    {
+      "topic": "Challenges with data quality and internal management at Florence",
+      "relevance": 0.7
+    }
+  ],
   "sentiment": {
-    "overall": "neutral",
-    "score": 0
+    "overall": "positive",
+    "score": 0.3
   },
-  "speakerStats": [],
+  "speakerStats": [
+    {
+      "speaker": "Speaker 1",
+      "durationSeconds": 1563.5,
+      "wordCount": 4280,
+      "percentage": 98.8
+    }
+  ],
   "communicationMetrics": {
-    "talkTimePercentage": 0,
-    "speakerBreakdown": [],
+    "talkTimePercentage": 98.8,
+    "speakerBreakdown": [
+      {
+        "speaker": "Speaker 1",
+        "durationSeconds": 1563.5,
+        "wordCount": 4280,
+        "percentage": 98.8
+      }
+    ],
     "averageResponseDelay": 0,
     "responseDelays": [],
     "interruptions": 0,
     "companyValuesAlignment": {
-      "overallAlignment": 0,
-      "values": []
+      "overallAlignment": 0.85,
+      "values": [
+        {
+          "value": "Collaboration",
+          "score": 0.9,
+          "examples": [
+            "I thought you'd be a good person to talk to.",
+            "I'd love your opinion."
+          ]
+        },
+        {
+          "value": "Innovation",
+          "score": 0.85,
+          "examples": [
+            "The idea is we can create a sort of documentation system using AI as well as a like CRM, like a sales CRM specifically for user research.",
+            "That one doesn't [do semantic analysis], there's a new one coming out [AI based]."
+          ]
+        },
+        {
+          "value": "Customer Focus",
+          "score": 0.9,
+          "examples": [
+            "Do you know if your marketing team would potentially use something like dovetail with your data in it so they could test like messaging",
+            "we will also do VOC [Voice of the Customer] because we don't want to just listen to our VOO [Voice of the Organization]."
+          ]
+        },
+        {
+          "value": "Accountability",
+          "score": 0.75,
+          "examples": [
+            "I basically was told last week that there's no growth for me at Florence.",
+            "I feel like where you're missing a connection point is actually the fact that you have bad analytics."
+          ]
+        },
+        {
+          "value": "Transparency",
+          "score": 0.9,
+          "examples": [
+            "I'm really frustrated.",
+            "He already doesn't like me. So I- [Why?] Because he thinks that I am he thinks that I am impeding on his expertise."
+          ]
+        }
+      ]
     },
-    "insights": "Cached transcript only"
+    "insights": "**1. Speaking time balance:** The 98.8% talk time indicates the meeting was almost entirely dominated by one speaker, who used the duration for detailed self-disclosure, pitching a business idea, and providing comprehensive answers about internal company research processes.\n\n**2. Interaction patterns:** The pattern was effective for the goal (seeking comprehensive advice), involving a massive initial information dump followed by a strategic Q&A where the advisor (the presumed other participant) skillfully probed for context and provided specific, actionable competitive analysis and career guidance.\n\n**3. Recommendations for improvement:** The primary speaker should segment lengthy pitches or background explanations with intentional, frequent pauses to solicit immediate feedback, ensuring the conversation remains a true dialogue rather than a monologue that risks monopolizing the advisor's time."
   },
-  "createdAt": "2025-10-08T00:07:43.837Z"
+  "createdAt": "2025-10-08T01:19:32.831Z"
 }

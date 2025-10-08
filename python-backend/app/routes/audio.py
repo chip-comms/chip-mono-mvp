@@ -25,9 +25,7 @@ def get_transcription_service() -> TranscriptionService:
     global _transcription_service
     if _transcription_service is None:
         _transcription_service = TranscriptionService(
-            model_size="small",  # Good balance of speed and accuracy
-            device="auto",       # Auto-detect best device
-            compute_type="float32"
+            model_name="base.en"  # Fast and accurate for English
         )
     return _transcription_service
 

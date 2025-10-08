@@ -1,109 +1,73 @@
 """
-Transcription Service using WhisperX
+Transcription Service using whisper.cpp
 
 Status: ✅ IMPLEMENTED
 
-This service handles speech-to-text conversion with word-level timestamps.
-Uses WhisperX for improved accuracy and alignment.
+This service handles speech-to-text conversion with timestamps.
+Uses whisper.cpp (local, free, fast) - same as TypeScript backend.
 """
 
 from typing import Optional, List, Dict, Any
 from pathlib import Path
 import logging
-import torch
+import subprocess
+import os
+import re
 
 logger = logging.getLogger(__name__)
 
 
 class TranscriptionService:
     """
-    WhisperX-based transcription service.
+    whisper.cpp-based transcription service.
     
     Features:
-    - Word-level timestamps
-    - Language detection
-    - High accuracy alignment
-    - Multiple model sizes
+    - Local processing (no API calls)
+    - Fast and free
+    - Segment timestamps
+    - Multiple languages
     """
     
     def __init__(
         self,
-        model_size: str = "small",
-        device: str = "auto",
-        compute_type: str = "float32"
+        model_name: str = "base.en"
     ):
         """
         Initialize transcription service.
         
         Args:
-            model_size: Model size (tiny, base, small, medium, large)
-            device: Device to use (auto, cpu, cuda, mps)
-            compute_type: Computation precision (float32, float16, int8)
+            model_name: Model name (tiny.en, base.en, small.en, etc.)
         """
-        self.model_size = model_size
+        self.model_name = model_name
+        self.model_path = self._get_model_path()
         
-        # Auto-detect device if not specified
-        if device == "auto":
-            if torch.cuda.is_available():
-                self.device = "cuda"
-            elif hasattr(torch.backends, "mps") and torch.backends.mps.is_available():
-                self.device = "mps"
-            else:
-                self.device = "cpu"
-        else:
-            self.device = device
-        
-        self.compute_type = compute_type
-        self.model = None
-        self.align_model = None
-        self.align_metadata = None
-        
-        logger.info(f"✅ Initializing TranscriptionService with {model_size} model on {self.device}")
+        logger.info(f"✅ Initializing TranscriptionService with whisper.cpp ({model_name})")
     
-    def load_model(self):
-        """Load WhisperX model and alignment model."""
-        if self.model is not None:
-            return  # Already loaded
+    def _get_model_path(self) -> Path:
+        """Get path to whisper model."""
+        home_dir = Path.home()
+        models_dir = home_dir / ".whisper-models"
+        model_path = models_dir / f"ggml-{self.model_name}.bin"
         
-        try:
-            import whisperx
-            
-            logger.info(f"📥 Loading WhisperX model: {self.model_size}...")
-            
-            # Load main transcription model
-            self.model = whisperx.load_model(
-                self.model_size,
-                self.device,
-                compute_type=self.compute_type
+        if not model_path.exists():
+            raise FileNotFoundError(
+                f"Model not found at {model_path}. "
+                f"Download with: curl -L https://huggingface.co/ggerganov/whisper.cpp/resolve/main/ggml-{self.model_name}.bin -o {model_path}"
             )
-            
-            logger.info(f"✅ WhisperX model loaded successfully")
-            
-        except ImportError as e:
-            logger.error("❌ WhisperX not installed. Run: pip install whisperx")
-            raise ImportError(
-                "WhisperX not installed. Install with: pip install whisperx"
-            ) from e
-        except Exception as e:
-            logger.error(f"❌ Failed to load WhisperX model: {e}")
-            raise
+        
+        return model_path
     
-    def load_align_model(self, language: str):
-        """Load alignment model for word-level timestamps."""
+    def _check_whisper_installed(self) -> bool:
+        """Check if whisper-cli is installed."""
         try:
-            import whisperx
-            
-            if self.align_model is None or self.align_metadata is None:
-                logger.info(f"📥 Loading alignment model for language: {language}")
-                self.align_model, self.align_metadata = whisperx.load_align_model(
-                    language_code=language,
-                    device=self.device
-                )
-                logger.info("✅ Alignment model loaded")
-                
-        except Exception as e:
-            logger.warning(f"⚠️ Failed to load alignment model: {e}")
-            # Continue without alignment
+            subprocess.run(
+                ["which", "whisper-cli"],
+                capture_output=True,
+                check=True
+            )
+            return True
+        except subprocess.CalledProcessError:
+            return False
     
     def transcribe(
         self,
@@ -116,8 +80,8 @@ class TranscriptionService:
         
         Args:
             audio_path: Path to audio file
-            language: Language code (e.g. 'en', 'es') or None for auto-detect
-            batch_size: Batch size for processing
+            language: Language code (e.g. 'en', 'es') or 'auto' for detection
+            batch_size: Not used (kept for API compatibility)
         
         Returns:
             Dictionary with:
@@ -126,74 +90,135 @@ class TranscriptionService:
                 - language: Detected/specified language
                 - duration: Audio duration in seconds
         """
+        # Check if whisper-cli is installed
+        if not self._check_whisper_installed():
+            raise RuntimeError(
+                "whisper-cli not found. Install with: brew install whisper-cpp"
+            )
+        
+        logger.info(f"🎤 Transcribing: {audio_path}")
+        
+        # Prepare output file path
+        output_base = audio_path.parent / audio_path.stem
+        srt_path = output_base.with_suffix('.srt')
+        txt_path = output_base.with_suffix('.txt')
+        
         try:
-            import whisperx
+            # Build whisper command
+            lang_flag = language or "auto"
+            command = [
+                "whisper-cli",
+                "-f", str(audio_path),
+                "-m", str(self.model_path),
+                "--output-srt",
+                "--output-txt",
+                "-l", lang_flag,
+                "--print-progress",
+                "-of", str(output_base)
+            ]
             
-            # Load model if not already loaded
-            if self.model is None:
-                self.load_model()
+            logger.info(f"Running: {' '.join(command[:5])}...")
             
-            logger.info(f"🎤 Transcribing: {audio_path}")
-            
-            # Load audio
-            audio = whisperx.load_audio(str(audio_path))
-            
-            # Transcribe
-            result = self.model.transcribe(
-                audio,
-                language=language,
-                batch_size=batch_size
+            # Run whisper-cli
+            result = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                timeout=300  # 5 minutes
             )
             
-            detected_language = result.get("language", language or "en")
-            logger.info(f"🗣️ Detected language: {detected_language}")
+            if result.returncode != 0:
+                raise RuntimeError(f"whisper-cli failed: {result.stderr}")
             
-            # Try to align for word-level timestamps
-            try:
-                self.load_align_model(detected_language)
-                
-                if self.align_model and self.align_metadata:
-                    logger.info("⏱️ Aligning timestamps...")
-                    result = whisperx.align(
-                        result["segments"],
-                        self.align_model,
-                        self.align_metadata,
-                        audio,
-                        self.device,
-                        return_char_alignments=False
-                    )
-            except Exception as e:
-                logger.warning(f"⚠️ Alignment failed, using basic timestamps: {e}")
+            # Parse SRT file for segments with timestamps
+            segments = []
+            full_text = ""
             
-            # Format output
-            segments = result.get("segments", [])
-            full_text = " ".join([s["text"].strip() for s in segments if s.get("text")])
+            if srt_path.exists():
+                segments = self._parse_srt(srt_path)
+                full_text = " ".join(s["text"] for s in segments)
+                logger.info(f"✅ Parsed {len(segments)} segments from SRT")
+            elif txt_path.exists():
+                # Fallback to text file
+                with open(txt_path, 'r', encoding='utf-8') as f:
+                    full_text = f.read().strip()
+                segments = [{
+                    "start": 0.0,
+                    "end": 60.0,  # Estimate
+                    "text": full_text
+                }]
+            else:
+                raise RuntimeError("No output files generated")
             
             # Calculate duration
             duration = segments[-1]["end"] if segments else 0.0
             
-            output = {
+            logger.info(f"✅ Transcription complete: {len(segments)} segments, {duration:.1f}s")
+            
+            return {
                 "text": full_text,
-                "segments": [
-                    {
-                        "start": seg.get("start", 0.0),
-                        "end": seg.get("end", 0.0),
-                        "text": seg.get("text", "").strip(),
-                        "words": seg.get("words", [])  # Word-level if aligned
-                    }
-                    for seg in segments
-                ],
-                "language": detected_language,
+                "segments": segments,
+                "language": language or "en",
                 "duration": duration
             }
             
-            logger.info(f"✅ Transcription complete: {len(segments)} segments, {duration:.1f}s")
-            
-            return output
-            
+        except subprocess.TimeoutExpired:
+            logger.error("❌ Transcription timed out")
+            raise RuntimeError("Transcription timed out after 5 minutes")
         except Exception as e:
             logger.error(f"❌ Transcription failed: {e}")
-            raise Exception(f"Failed to transcribe audio: {str(e)}")
+            raise
+        finally:
+            # Cleanup output files
+            for path in [srt_path, txt_path]:
+                if path.exists():
+                    try:
+                        path.unlink()
+                    except:
+                        pass
+    
+    def _parse_srt(self, srt_path: Path) -> List[Dict[str, Any]]:
+        """Parse SRT file into segments."""
+        segments = []
+        
+        with open(srt_path, 'r', encoding='utf-8') as f:
+            content = f.read()
+        
+        # Split by double newlines
+        blocks = content.strip().split('\n\n')
+        
+        for block in blocks:
+            lines = block.split('\n')
+            if len(lines) >= 3:
+                # Parse timestamp line (format: 00:00:01,000 --> 00:00:03,500)
+                timestamp_line = lines[1]
+                match = re.match(
+                    r'(\d{2}):(\d{2}):(\d{2}),(\d{3}) --> (\d{2}):(\d{2}):(\d{2}),(\d{3})',
+                    timestamp_line
+                )
+                
+                if match:
+                    groups = match.groups()
+                    start = (int(groups[0]) * 3600 + 
+                            int(groups[1]) * 60 + 
+                            int(groups[2]) + 
+                            int(groups[3]) / 1000)
+                    end = (int(groups[4]) * 3600 + 
+                          int(groups[5]) * 60 + 
+                          int(groups[6]) + 
+                          int(groups[7]) / 1000)
+                    
+                    # Get text (remaining lines)
+                    text = ' '.join(lines[2:]).strip()
+                    
+                    if text:
+                        segments.append({
+                            "start": start,
+                            "end": end,
+                            "text": text
+                        })
+        
+        return segments
     
     def transcribe_with_words(
         self,
@@ -201,23 +226,12 @@ class TranscriptionService:
         language: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Transcribe with word-level timestamps.
+        Transcribe with segment timestamps.
         
-        Returns segments with individual word timings.
+        Note: whisper.cpp doesn't provide word-level timestamps,
+        only segment-level. For word-level, use OpenAI API or WhisperX.
         """
-        # Same as transcribe, alignment is automatic
-        result = self.transcribe(audio_path, language)
-        
-        # Verify we have word-level timestamps
-        has_words = any(
-            seg.get("words") and len(seg["words"]) > 0
-            for seg in result["segments"]
-        )
-        
-        if not has_words:
-            logger.warning("⚠️ No word-level timestamps available")
-        
-        return result
+        return self.transcribe(audio_path, language)
     
     def get_supported_languages(self) -> List[str]:
         """Get list of supported languages."""
@@ -241,15 +255,11 @@ class TranscriptionService:
 
 # Example usage
 """
-service = TranscriptionService(model_size="small", device="cpu")
-result = service.transcribe("meeting.wav", language="en")
+service = TranscriptionService(model_name="base.en")
+result = service.transcribe(Path("meeting.wav"), language="en")
 
 print(result["text"])
 for segment in result["segments"]:
     print(f"[{segment['start']:.2f}s - {segment['end']:.2f}s]: {segment['text']}")
-    
-    # Word-level timestamps (if available)
-    for word in segment.get("words", []):
-        print(f"  {word['start']:.2f}s: {word['word']}")
 """
 

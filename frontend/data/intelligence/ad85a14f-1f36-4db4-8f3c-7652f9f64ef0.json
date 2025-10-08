@@ -1,5 +1,5 @@
 {
-  "recordingId": "transcript-sample-beau-lauren-2024-06-20",
+  "recordingId": "ad85a14f-1f36-4db4-8f3c-7652f9f64ef0",
   "transcript": {
     "segments": [
       {
@@ -3643,25 +3643,110 @@
     "durationSeconds": 1581.8,
     "speakers": ["Speaker 1"]
   },
-  "summary": "Cached transcript only",
-  "actionItems": [],
-  "keyTopics": [],
+  "summary": "A Florence employee expresses frustration over limited career growth opportunities and pitches a startup idea centered on AI-driven user research documentation and CRM. The listener provides competitive analysis, discusses their company's extensive research practices (VOO, VOC), and advises the speaker to position their future career trajectory specifically around their expertise in User Research.",
+  "actionItems": [
+    {
+      "text": "Look up and send the link/information for the new AI-based user research tool (not Dovetail or Insight 7).",
+      "priority": "high"
+    },
+    {
+      "text": "Look up and send the link/information for the Maze user testing tool.",
+      "priority": "high"
+    },
+    {
+      "text": "Revise resume to reflect expertise and title as 'User Researcher' rather than focusing on Product Management.",
+      "priority": "medium"
+    }
+  ],
+  "keyTopics": [
+    {
+      "topic": "Startup Exploration/User Research Tooling",
+      "relevance": 0.95
+    },
+    {
+      "topic": "Competitive Analysis (Dovetail, Maze)",
+      "relevance": 0.9
+    },
+    {
+      "topic": "Career Planning and Advice",
+      "relevance": 0.85
+    },
+    {
+      "topic": "Organizational Data Quality and Analytics Issues (Florence)",
+      "relevance": 0.8
+    }
+  ],
   "sentiment": {
     "overall": "neutral",
-    "score": 0
+    "score": 0.2
   },
-  "speakerStats": [],
+  "speakerStats": [
+    {
+      "speaker": "Speaker 1",
+      "durationSeconds": 1563.5,
+      "wordCount": 4280,
+      "percentage": 98.8
+    }
+  ],
   "communicationMetrics": {
-    "talkTimePercentage": 0,
-    "speakerBreakdown": [],
+    "talkTimePercentage": 98.8,
+    "speakerBreakdown": [
+      {
+        "speaker": "Speaker 1",
+        "durationSeconds": 1563.5,
+        "wordCount": 4280,
+        "percentage": 98.8
+      }
+    ],
     "averageResponseDelay": 0,
     "responseDelays": [],
     "interruptions": 0,
     "companyValuesAlignment": {
-      "overallAlignment": 0,
-      "values": []
+      "overallAlignment": 0.75,
+      "values": [
+        {
+          "value": "Collaboration",
+          "score": 0.9,
+          "examples": [
+            "I think I thought you'd be a good person to talk to.",
+            "And if you have questions, I'm happy to like help you."
+          ]
+        },
+        {
+          "value": "Innovation",
+          "score": 0.85,
+          "examples": [
+            "The idea is we can create a sort of documentation system using AI as well as a like CRM... specifically for user research.",
+            "There's a new one coming out. Like this AI base that does that more and I don't remember the name of it."
+          ]
+        },
+        {
+          "value": "Customer Focus",
+          "score": 0.8,
+          "examples": [
+            "So we do, we can do like small like focus group VOs... On top of that, we will also do VOC because we don't want to just listen to our VOO.",
+            "people just want to make the product better for them."
+          ]
+        },
+        {
+          "value": "Accountability",
+          "score": 0.4,
+          "examples": [
+            "I feel like Florence is particularly terrible [data quality]... And the fact that they have not done more to make it not terrible is gonna sink them.",
+            "I consider that a management decision problem, more than a functional problem."
+          ]
+        },
+        {
+          "value": "Transparency",
+          "score": 0.8,
+          "examples": [
+            "I basically was told last week that there's no growth for me at Florence. So I'm evaluating new business ideas.",
+            "he already doesn't like me... Because he thinks that I am he thinks that I am impeding on his expertise."
+          ]
+        }
+      ]
     },
-    "insights": "Cached transcript only"
+    "insights": "**Caveat:** The metrics (98.8% talk time, 1 speaker) appear flawed; the transcript clearly shows a dynamic, two-way consultative conversation. The interaction pattern was highly effective: the initial speaker presented a detailed idea, and the expert advisor responded with critical, data-rich counterpoints (e.g., Dovetail's existing features) and delivered direct, constructive career advice. For improvement, the initial speaker should focus on applying the specific guidance received—repositioning their career identity as a \"User Researcher\"—to create a concrete follow-up action plan."
   },
-  "createdAt": "2025-10-08T00:07:43.837Z"
+  "createdAt": "2025-10-08T01:19:08.340Z"
 }

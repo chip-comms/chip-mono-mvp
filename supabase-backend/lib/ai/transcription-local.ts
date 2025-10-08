@@ -107,7 +107,7 @@ export async function transcribeAudioLocal(
 
     const command = `whisper-cli -f "${tempAudioPath}" -m "${modelPath}" --output-txt --output-srt -l auto --print-progress -of "${outputFile}"`;
 
-    const { stdout, stderr } = await execAsync(command, {
+    await execAsync(command, {
       timeout: 300000, // 5 minutes
       maxBuffer: 10 * 1024 * 1024, // 10MB buffer
     });

@@ -8,7 +8,7 @@ import { LocalDataAdapter } from '@/supabase-backend/lib/data/local';
 
 const data = new LocalDataAdapter();
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
   try {
     await data.initialize();
 

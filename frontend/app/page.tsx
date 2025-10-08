@@ -21,15 +21,17 @@ type ProcessingStep = {
 
 export default function Home() {
   const [isProcessing, setIsProcessing] = useState(false);
-  const [currentRecording, setCurrentRecording] = useState<Recording | null>(null);
+  const [currentRecording, setCurrentRecording] = useState<Recording | null>(
+    null
+  );
   const [error, setError] = useState<string | null>(null);
-  const [intelligence, setIntelligence] = useState<any>(null);
+  const [intelligence, setIntelligence] = useState<Intelligence | null>(null);
   const [processingSteps, setProcessingSteps] = useState<ProcessingStep[]>([
     { id: 'upload', name: 'Copying Sample File', status: 'pending' },
     { id: 'extract', name: 'Extracting Audio', status: 'pending' },
     { id: 'transcribe', name: 'Transcribing Audio', status: 'pending' },
     { id: 'analyze', name: 'AI Analysis', status: 'pending' },
-    { id: 'complete', name: 'Complete', status: 'pending' }
+    { id: 'complete', name: 'Complete', status: 'pending' },
   ]);
 
   // Auto-refresh processing status
@@ -43,7 +45,7 @@ export default function Home() {
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [isProcessing, currentRecording]);
+  }, [isProcessing, currentRecording, checkRecordingStatus]);
 
   const checkRecordingStatus = async () => {
     if (!currentRecording) {
@@ -61,7 +63,7 @@ export default function Home() {
 
         if (updated.status === 'completed' || updated.status === 'failed') {
           setIsProcessing(false);
-          
+
           // Load intelligence data if completed
           if (updated.status === 'completed') {
             loadIntelligence(updated.id);
@@ -83,7 +85,7 @@ export default function Home() {
     try {
       const response = await fetch(`/api/intelligence/${recordingId}`);
       const data = await response.json();
-      
+
       if (response.ok && data && !data.error) {
         setIntelligence(data);
         console.log('Intelligence loaded:', data);
@@ -181,7 +183,13 @@ export default function Home() {
     setCurrentRecording(null);
     setError(null);
     setIntelligence(null);
-    setProcessingSteps(prev => prev.map(step => ({ ...step, status: 'pending' as const, message: undefined })));
+    setProcessingSteps((prev) =>
+      prev.map((step) => ({
+        ...step,
+        status: 'pending' as const,
+        message: undefined,
+      }))
+    );
   };
 
   const getStepIcon = (step: ProcessingStep) => {
@@ -352,73 +360,114 @@ export default function Home() {
                       Processing Complete!
                     </h3>
                     <p className="text-green-700">
-                      Your recording has been successfully transcribed and analyzed.
+                      Your recording has been successfully transcribed and
+                      analyzed.
                     </p>
                   </div>
                 </div>
-                
+
                 {/* AI Analysis Results */}
                 {intelligence && (
                   <div className="bg-white border border-gray-200 rounded-lg p-6">
                     <h3 className="text-lg font-semibold text-gray-800 mb-4">
                       🤖 AI Analysis Results
                     </h3>
-                    
+
                     {/* Summary */}
                     <div className="mb-6">
-                      <h4 className="font-medium text-gray-700 mb-2">📋 Summary:</h4>
-                      <p className="text-gray-600 bg-gray-50 p-3 rounded">{intelligence.summary}</p>
+                      <h4 className="font-medium text-gray-700 mb-2">
+                        📋 Summary:
+                      </h4>
+                      <p className="text-gray-600 bg-gray-50 p-3 rounded">
+                        {intelligence.summary}
+                      </p>
                     </div>
-                    
+
                     {/* Action Items */}
-                    {intelligence.actionItems && intelligence.actionItems.length > 0 && (
-                      <div className="mb-6">
-                        <h4 className="font-medium text-gray-700 mb-2">✅ Action Items:</h4>
-                        <ul className="space-y-2">
-                          {intelligence.actionItems.map((item: any, index: number) => (
-                            <li key={index} className="flex items-start space-x-2">
-                              <span className={`inline-block w-2 h-2 rounded-full mt-2 ${
-                                item.priority === 'high' ? 'bg-red-500' :
-                                item.priority === 'medium' ? 'bg-yellow-500' : 'bg-green-500'
-                              }`}></span>
-                              <div>
-                                <span className="text-gray-800">{item.text}</span>
-                                <span className={`ml-2 text-xs px-2 py-1 rounded ${
-                                  item.priority === 'high' ? 'bg-red-100 text-red-700' :
-                                  item.priority === 'medium' ? 'bg-yellow-100 text-yellow-700' :
-                                  'bg-green-100 text-green-700'
-                                }`}>{item.priority}</span>
-                              </div>
-                            </li>
-                          ))}
-                        </ul>
-                      </div>
-                    )}
-                    
-                    {/* Key Topics */}
-                    {intelligence.keyTopics && intelligence.keyTopics.length > 0 && (
-                      <div className="mb-6">
-                        <h4 className="font-medium text-gray-700 mb-2">🏷️ Key Topics:</h4>
-                        <div className="flex flex-wrap gap-2">
-                          {intelligence.keyTopics.map((topic: any, index: number) => (
-                            <span key={index} className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm">
-                              {topic.topic} ({Math.round(topic.relevance * 100)}%)
-                            </span>
-                          ))}
+                    {intelligence.actionItems &&
+                      intelligence.actionItems.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className="font-medium text-gray-700 mb-2">
+                            ✅ Action Items:
+                          </h4>
+                          <ul className="space-y-2">
+                            {intelligence.actionItems.map(
+                              (item: ActionItem, index: number) => (
+                                <li
+                                  key={index}
+                                  className="flex items-start space-x-2"
+                                >
+                                  <span
+                                    className={`inline-block w-2 h-2 rounded-full mt-2 ${
+                                      item.priority === 'high'
+                                        ? 'bg-red-500'
+                                        : item.priority === 'medium'
+                                          ? 'bg-yellow-500'
+                                          : 'bg-green-500'
+                                    }`}
+                                  ></span>
+                                  <div>
+                                    <span className="text-gray-800">
+                                      {item.text}
+                                    </span>
+                                    <span
+                                      className={`ml-2 text-xs px-2 py-1 rounded ${
+                                        item.priority === 'high'
+                                          ? 'bg-red-100 text-red-700'
+                                          : item.priority === 'medium'
+                                            ? 'bg-yellow-100 text-yellow-700'
+                                            : 'bg-green-100 text-green-700'
+                                      }`}
+                                    >
+                                      {item.priority}
+                                    </span>
+                                  </div>
+                                </li>
+                              )
+                            )}
+                          </ul>
                         </div>
-                      </div>
-                    )}
-                    
+                      )}
+
+                    {/* Key Topics */}
+                    {intelligence.keyTopics &&
+                      intelligence.keyTopics.length > 0 && (
+                        <div className="mb-6">
+                          <h4 className="font-medium text-gray-700 mb-2">
+                            🏷️ Key Topics:
+                          </h4>
+                          <div className="flex flex-wrap gap-2">
+                            {intelligence.keyTopics.map(
+                              (topic: KeyTopic, index: number) => (
+                                <span
+                                  key={index}
+                                  className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                                >
+                                  {topic.topic} (
+                                  {Math.round(topic.relevance * 100)}%)
+                                </span>
+                              )
+                            )}
+                          </div>
+                        </div>
+                      )}
+
                     {/* Sentiment */}
                     {intelligence.sentiment && (
                       <div className="mb-6">
-                        <h4 className="font-medium text-gray-700 mb-2">😊 Sentiment:</h4>
+                        <h4 className="font-medium text-gray-700 mb-2">
+                          😊 Sentiment:
+                        </h4>
                         <div className="bg-gray-50 p-3 rounded">
-                          <span className={`inline-block px-3 py-1 rounded-full text-sm ${
-                            intelligence.sentiment.overall === 'positive' ? 'bg-green-100 text-green-800' :
-                            intelligence.sentiment.overall === 'negative' ? 'bg-red-100 text-red-800' :
-                            'bg-gray-100 text-gray-800'
-                          }`}>
+                          <span
+                            className={`inline-block px-3 py-1 rounded-full text-sm ${
+                              intelligence.sentiment.overall === 'positive'
+                                ? 'bg-green-100 text-green-800'
+                                : intelligence.sentiment.overall === 'negative'
+                                  ? 'bg-red-100 text-red-800'
+                                  : 'bg-gray-100 text-gray-800'
+                            }`}
+                          >
                             {intelligence.sentiment.overall}
                           </span>
                           <span className="ml-2 text-gray-600">
@@ -427,11 +476,13 @@ export default function Home() {
                         </div>
                       </div>
                     )}
-                    
+
                     {/* Communication Insights */}
                     {intelligence.communicationMetrics?.insights && (
                       <div className="mb-6">
-                        <h4 className="font-medium text-gray-700 mb-2">💬 Communication Insights:</h4>
+                        <h4 className="font-medium text-gray-700 mb-2">
+                          💬 Communication Insights:
+                        </h4>
                         <p className="text-gray-600 bg-blue-50 p-3 rounded">
                           {intelligence.communicationMetrics.insights}
                         </p>
