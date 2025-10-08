@@ -129,22 +129,24 @@ export class MeetingAssistantAPI {
 
       if (error) throw error;
 
-      return (data || []).map((job: {
-        id: string;
-        video_url: string;
-        status: string;
-        created_at: string;
-        processing_error?: string;
-      }) => ({
-        id: job.id,
-        title: job.video_url.split('/').pop() || 'Unknown Recording',
-        filename: job.video_url,
-        fileType: 'video/mp4', // Default for now
-        fileSizeBytes: 0, // Not stored yet
-        status: job.status,
-        createdAt: job.created_at,
-        processingError: job.processing_error,
-      }));
+      return (data || []).map(
+        (job: {
+          id: string;
+          video_url: string;
+          status: string;
+          created_at: string;
+          processing_error?: string;
+        }) => ({
+          id: job.id,
+          title: job.video_url.split('/').pop() || 'Unknown Recording',
+          filename: job.video_url,
+          fileType: 'video/mp4', // Default for now
+          fileSizeBytes: 0, // Not stored yet
+          status: job.status,
+          createdAt: job.created_at,
+          processingError: job.processing_error,
+        })
+      );
     } catch (error: unknown) {
       console.error('Failed to fetch recordings:', error);
       return [];
