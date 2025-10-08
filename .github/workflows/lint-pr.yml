@@ -111,9 +111,16 @@ jobs:
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           echo "Checking formatting for changed files..."
-          echo "${{ steps.changed-files.outputs.all_changed_files }}"
-          if [ -n "${{ steps.changed-files.outputs.all_changed_files }}" ]; then
-            prettier --check ${{ steps.changed-files.outputs.all_changed_files }}
+          echo "All changed files: ${{ steps.changed-files.outputs.all_changed_files }}"
+          
+          # Filter files to only include formats Prettier can handle
+          PRETTIER_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '\.(ts|tsx|js|jsx|json|css|scss|md|yaml|yml)$' | tr '\n' ' ')
+          
+          if [ -n "$PRETTIER_FILES" ]; then
+            echo "Files to check with Prettier: $PRETTIER_FILES"
+            prettier --check $PRETTIER_FILES
+          else
+            echo "No files found that Prettier can format"
           fi
       
       - name: Lint frontend files
