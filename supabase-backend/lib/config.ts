@@ -6,7 +6,16 @@
 import type { Config } from './types';
 
 export const config: Config = {
+  // AI Provider Configuration
   openaiApiKey: process.env.OPENAI_API_KEY || '',
+  geminiApiKey: process.env.GEMINI_API_KEY || '',
+  anthropicApiKey: process.env.ANTHROPIC_API_KEY || '',
+
+  // Preferred AI provider (auto, openai, gemini, anthropic)
+  aiProvider:
+    (process.env.AI_PROVIDER as 'auto' | 'openai' | 'gemini' | 'anthropic') ||
+    'auto',
+
   maxFileSizeMB: 200,
   supportedFormats: [
     'video/mp4',
@@ -28,15 +37,23 @@ export const config: Config = {
 };
 
 // Validation
-if (!config.openaiApiKey && process.env.NODE_ENV !== 'development') {
-  console.warn('⚠️  OPENAI_API_KEY is not set');
+if (
+  !config.openaiApiKey &&
+  !config.geminiApiKey &&
+  process.env.NODE_ENV !== 'development'
+) {
+  console.warn(
+    '⚠️  No AI provider API key is set (OPENAI_API_KEY or GEMINI_API_KEY)'
+  );
 }
 
 export function validateConfig(): { valid: boolean; errors: string[] } {
   const errors: string[] = [];
 
-  if (!config.openaiApiKey) {
-    errors.push('OPENAI_API_KEY is required');
+  if (!config.openaiApiKey && !config.geminiApiKey && !config.anthropicApiKey) {
+    errors.push(
+      'At least one AI provider API key is required (OPENAI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY)'
+    );
   }
 
   if (config.maxFileSizeMB <= 0) {

@@ -1,0 +1,24 @@
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+python-multipart>=0.0.9
+ffmpeg-python>=0.2.0
+opencv-python>=4.9.0.80
+Pillow>=10.3.0
+pydantic>=2.5.3
+python-dotenv>=1.0.0
+httpx>=0.26.0
+pydantic-settings>=2.0.0
+
+# LLM Providers
+openai>=1.0.0
+google-generativeai>=0.3.0
+
+# Audio Processing & Transcription
+whisperx>=3.1.0
+torch>=2.0.0
+torchaudio>=2.0.0
+faster-whisper>=0.9.0
+pyannote.audio>=3.0.0
+librosa>=0.10.0
+soundfile>=0.12.0
+

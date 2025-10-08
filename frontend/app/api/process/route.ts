@@ -10,7 +10,7 @@ import path from 'path';
 import os from 'os';
 import { LocalStorageAdapter } from '@/supabase-backend/lib/storage/local';
 import { LocalDataAdapter } from '@/supabase-backend/lib/data/local';
-import { transcribeAudio } from '@/supabase-backend/lib/ai/transcription';
+import { transcribeAudio } from '@/supabase-backend/lib/ai/transcription-adapter';
 import {
   analyzeTranscript,
   generateCommunicationInsights,
@@ -33,6 +33,7 @@ export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     recordingId = body.recordingId;
+    const sampleFileId = body.sampleFileId; // Optional sample file reference
 
     if (!recordingId) {
       return NextResponse.json(
@@ -57,7 +58,35 @@ export async function POST(req: NextRequest) {
 
     // Get file from storage
     console.log(`[${recordingId}] Fetching file from storage...`);
-    const fileBuffer = await storage.getFile(recording.filename);
+
+    let storedFilePath: string;
+    if (sampleFileId || recording.sampleFileId) {
+      // Use the shared sample file
+      const fileId = sampleFileId || recording.sampleFileId;
+      console.log(`[${recordingId}] Using shared sample file: ${fileId}`);
+      const ext =
+        recording.fileType === 'video/mp4'
+          ? '.mp4'
+          : recording.fileType === 'audio/mpeg'
+            ? '.mp3'
+            : recording.fileType === 'audio/wav'
+              ? '.wav'
+              : '.bin';
+      storedFilePath = storage.getFilePath(fileId, ext);
+    } else {
+      // Use the individual recording file
+      const ext =
+        recording.fileType === 'video/mp4'
+          ? '.mp4'
+          : recording.fileType === 'audio/mpeg'
+            ? '.mp3'
+            : recording.fileType === 'audio/wav'
+              ? '.wav'
+              : '.bin';
+      storedFilePath = storage.getFilePath(recordingId, ext);
+    }
+
+    const fileBuffer = await storage.getFile(storedFilePath);
 
     // Extract audio if video file
     let audioFile: File;
@@ -77,9 +106,33 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    // Step 1: Transcribe audio
+    // Step 1: Transcribe audio (with caching for sample files)
     console.log(`[${recordingId}] Transcribing audio...`);
-    const transcript = await transcribeAudio(audioFile, config.openaiApiKey);
+    let transcript: any;
+
+    const sampleId = sampleFileId || recording.sampleFileId;
+    if (sampleId) {
+      // Check if we already have a transcript for this sample file
+      const existingTranscript = await checkForExistingTranscript(sampleId);
+      if (existingTranscript) {
+        console.log(
+          `[${recordingId}] ♻️ Reusing existing transcript for sample: ${sampleId}`
+        );
+        transcript = existingTranscript;
+      } else {
+        console.log(
+          `[${recordingId}] 🎤 Transcribing sample for first time: ${sampleId}`
+        );
+        transcript = await transcribeAudio(audioFile, config.openaiApiKey);
+        // Cache the transcript for future use
+        await cacheTranscript(sampleId, transcript);
+        console.log(`[${recordingId}] 💾 Transcript cached for future reuse`);
+      }
+    } else {
+      // Regular file, transcribe normally
+      transcript = await transcribeAudio(audioFile, config.openaiApiKey);
+    }
+
     console.log(
       `[${recordingId}] Transcription complete. Duration: ${transcript.durationSeconds}s, Speakers: ${transcript.speakers.length}`
     );
@@ -231,4 +284,58 @@ async function extractAudio(
       reject(error);
     }
   });
+}
+
+/**
+ * Check if we have a cached transcript for a sample file
+ */
+async function checkForExistingTranscript(
+  sampleId: string
+): Promise<any | null> {
+  try {
+    // Use the data adapter to look for existing intelligence with this sample ID
+    // We'll store transcripts as a special "transcript-only" intelligence entry
+    const transcriptKey = `transcript-${sampleId}`;
+    const cachedIntelligence = await data.getIntelligence(transcriptKey);
+    return cachedIntelligence?.transcript || null;
+  } catch (error) {
+    // If error reading cache, just return null (will re-transcribe)
+    return null;
+  }
+}
+
+/**
+ * Cache a transcript for future reuse
+ */
+async function cacheTranscript(
+  sampleId: string,
+  transcript: any
+): Promise<void> {
+  try {
+    const transcriptKey = `transcript-${sampleId}`;
+    // Store as a minimal intelligence entry with just the transcript
+    const cachedEntry = {
+      recordingId: transcriptKey,
+      transcript,
+      summary: 'Cached transcript only',
+      actionItems: [],
+      keyTopics: [],
+      sentiment: { overall: 'neutral' as const, score: 0 },
+      speakerStats: [],
+      communicationMetrics: {
+        talkTimePercentage: 0,
+        speakerBreakdown: [],
+        averageResponseDelay: 0,
+        responseDelays: [],
+        interruptions: 0,
+        companyValuesAlignment: { overallAlignment: 0, values: [] },
+        insights: 'Cached transcript only',
+      },
+      createdAt: new Date().toISOString(),
+    };
+    await data.saveIntelligence(cachedEntry);
+  } catch (error) {
+    console.error('Failed to cache transcript:', error);
+    // Don't throw - caching failure shouldn't break the pipeline
+  }
 }

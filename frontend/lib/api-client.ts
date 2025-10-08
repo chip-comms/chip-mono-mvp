@@ -1,5 +1,10 @@
 import axios, { AxiosProgressEvent } from 'axios';
-import { Recording, Intelligence, UploadResponse, ProcessingResponse } from './types';
+import {
+  Recording,
+  Intelligence,
+  UploadResponse,
+  ProcessingResponse,
+} from './types';
 
 // Configuration - using local Next.js API routes
 const API_BASE_URL = process.env.NEXT_PUBLIC_BACKEND_URL || '';
@@ -13,7 +18,6 @@ const apiClient = axios.create({
 });
 
 export class MeetingAssistantAPI {
-  
   /**
    * Upload a file to the backend for processing
    */
@@ -38,7 +42,8 @@ export class MeetingAssistantAPI {
         message: response.data.message || 'Upload successful',
       };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Upload failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Upload failed';
       console.error('Upload failed:', errorMessage);
       return {
         success: false,
@@ -50,7 +55,9 @@ export class MeetingAssistantAPI {
   /**
    * Process a sample recording (for demo purposes)
    */
-  static async processSampleRecording(sampleFilename: string): Promise<UploadResponse> {
+  static async processSampleRecording(
+    sampleFilename: string
+  ): Promise<UploadResponse> {
     try {
       const response = await apiClient.post('/api/process-sample', {
         filename: sampleFilename,
@@ -62,7 +69,8 @@ export class MeetingAssistantAPI {
         message: response.data.message || 'Sample processing started',
       };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Sample processing failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Sample processing failed';
       console.error('Sample processing failed:', errorMessage);
       return {
         success: false,
@@ -87,9 +95,13 @@ export class MeetingAssistantAPI {
   /**
    * Get processing status for a specific recording
    */
-  static async getProcessingStatus(recordingId: string): Promise<ProcessingResponse> {
+  static async getProcessingStatus(
+    recordingId: string
+  ): Promise<ProcessingResponse> {
     try {
-      const response = await apiClient.get(`/api/recordings/${recordingId}/status`);
+      const response = await apiClient.get(
+        `/api/recordings/${recordingId}/status`
+      );
       return {
         success: true,
         status: response.data.status,
@@ -97,7 +109,8 @@ export class MeetingAssistantAPI {
         message: response.data.message,
       };
     } catch (error: unknown) {
-      const errorMessage = error instanceof Error ? error.message : 'Status check failed';
+      const errorMessage =
+        error instanceof Error ? error.message : 'Status check failed';
       console.error('Failed to fetch processing status:', error);
       return {
         success: false,
@@ -110,7 +123,9 @@ export class MeetingAssistantAPI {
   /**
    * Get intelligence data for a completed recording
    */
-  static async getIntelligence(recordingId: string): Promise<Intelligence | null> {
+  static async getIntelligence(
+    recordingId: string
+  ): Promise<Intelligence | null> {
     try {
       const response = await apiClient.get(`/api/intelligence/${recordingId}`);
       return response.data;

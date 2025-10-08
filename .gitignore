@@ -15,7 +15,7 @@ package-lock.json
 .env
 .env.local
 .env*.local
-frontend/.env*
+frontend/.env.local
 supabase-backend/.env*
 
 # Testing
@@ -34,7 +34,11 @@ frontend/build/
 frontend/public/uploads/
 supabase-backend/storage/
 supabase-backend/data/
+python-backend/storage/
+python-backend/venv/
+python-backend/__pycache__/
 recording-samples/
+frontend/storage/uploads
 
 # TypeScript
 *.tsbuildinfo
