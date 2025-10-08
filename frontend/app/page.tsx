@@ -1,8 +1,8 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { MeetingAssistantAPI } from '@/lib/api-client';
-import type { Recording } from '@/lib/types';
+import type { Recording, Intelligence, ActionItem, KeyTopic } from '@/lib/types';
 import {
   AlertCircle,
   CheckCircle,
@@ -34,20 +34,7 @@ export default function Home() {
     { id: 'complete', name: 'Complete', status: 'pending' },
   ]);
 
-  // Auto-refresh processing status
-  useEffect(() => {
-    let interval: NodeJS.Timeout;
-    if (isProcessing && currentRecording) {
-      interval = setInterval(async () => {
-        await checkRecordingStatus();
-      }, 2000);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [isProcessing, currentRecording, checkRecordingStatus]);
-
-  const checkRecordingStatus = async () => {
+  const checkRecordingStatus = useCallback(async () => {
     if (!currentRecording) {
       setIsProcessing(false);
       return;
@@ -79,7 +66,20 @@ export default function Home() {
       // On error, stop polling after a few attempts
       setIsProcessing(false);
     }
-  };
+  }, [currentRecording]);
+
+  // Auto-refresh processing status
+  useEffect(() => {
+    let interval: NodeJS.Timeout;
+    if (isProcessing && currentRecording) {
+      interval = setInterval(async () => {
+        await checkRecordingStatus();
+      }, 2000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [isProcessing, currentRecording, checkRecordingStatus]);
 
   const loadIntelligence = async (recordingId: string) => {
     try {
@@ -478,13 +478,13 @@ export default function Home() {
                     )}
 
                     {/* Communication Insights */}
-                    {intelligence.communicationMetrics?.insights && (
+                    {intelligence.communicationMetrics?.companyValuesAlignment?.insights && (
                       <div className="mb-6">
                         <h4 className="font-medium text-gray-700 mb-2">
                           💬 Communication Insights:
                         </h4>
                         <p className="text-gray-600 bg-blue-50 p-3 rounded">
-                          {intelligence.communicationMetrics.insights}
+                          {intelligence.communicationMetrics.companyValuesAlignment.insights}
                         </p>
                       </div>
                     )}

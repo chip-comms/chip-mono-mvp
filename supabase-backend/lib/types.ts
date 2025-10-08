@@ -45,6 +45,26 @@ export interface Transcript {
   speakers: string[]; // List of unique speakers
 }
 
+export interface Speaker {
+  id: string;
+  name: string;
+  totalTime: number;
+  wordCount: number;
+}
+
+export interface TranscriptionResult {
+  text: string;
+  segments: Array<{
+    start: number;
+    end: number;
+    text: string;
+    speaker?: string;
+  }>;
+  speakers: Speaker[];
+  durationSeconds: number;
+  confidence?: number;
+}
+
 // ============================================================================
 // Intelligence Types
 // ============================================================================
