@@ -1,5 +1,10 @@
 name: Lint and Format Check
 
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
 on:
   pull_request:
     branches:
@@ -43,13 +48,29 @@ jobs:
       
       - name: Install frontend dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
-        working-directory: ./frontend
-        run: npm ci
+        run: |
+          if [ -d "./frontend" ] && [ -f "./frontend/package-lock.json" ]; then
+            echo "Frontend directory and package-lock.json found"
+            cd ./frontend && npm ci
+          else
+            echo "Frontend directory or package-lock.json not found, skipping npm ci"
+            echo "Debug info:"
+            ls -la .
+            ls -la ./frontend/ || echo "Frontend directory does not exist"
+          fi
       
       - name: Install backend dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
-        working-directory: ./supabase-backend
-        run: npm ci
+        run: |
+          if [ -d "./supabase-backend" ] && [ -f "./supabase-backend/package-lock.json" ]; then
+            echo "Supabase-backend directory and package-lock.json found"
+            cd ./supabase-backend && npm ci
+          else
+            echo "Supabase-backend directory or package-lock.json not found, skipping npm ci"
+            echo "Debug info:"
+            ls -la .
+            ls -la ./supabase-backend/ || echo "Supabase-backend directory does not exist"
+          fi
       
       - name: Install prettier
         if: steps.changed-files.outputs.any_changed == 'true'
