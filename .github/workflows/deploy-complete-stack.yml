@@ -160,7 +160,7 @@ jobs:
 
   # Create comprehensive deployment summary
   deployment-summary:
-    needs: [detect-changes, deploy-frontend, deploy-python, deploy-functions]
+    needs: [detect-changes, deploy-python, deploy-functions]
     if: always()
     runs-on: ubuntu-latest
     
