@@ -91,16 +91,16 @@ export async function transcribeAudioLocal(
   // Save audio file to temporary location
   const tempDir = os.tmpdir();
   const tempAudioPath = path.join(tempDir, `audio-${Date.now()}.mp3`);
+  
+  // Declare output files outside try block for cleanup
+  const outputPath = tempAudioPath.replace('.mp3', '.txt');
+  const outputFile = tempAudioPath.replace('.mp3', '');
 
   try {
     // Write audio file
     const arrayBuffer = await audioFile.arrayBuffer();
     const buffer = new Uint8Array(arrayBuffer);
     await fs.writeFile(tempAudioPath, buffer);
-
-    // Run whisper with timestamp output
-    const outputPath = tempAudioPath.replace('.mp3', '.txt');
-    const outputFile = tempAudioPath.replace('.mp3', '');
 
     // Download base model if it doesn't exist
     const modelPath = await ensureModel();
