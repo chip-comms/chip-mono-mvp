@@ -26,14 +26,8 @@ export class MeetingAssistantAPI {
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('meeting-recordings')
         .upload(fileName, file, {
-          onUploadProgress: (progress) => {
-            if (onUploadProgress && progress.total) {
-              onUploadProgress({
-                loaded: progress.loaded,
-                total: progress.total,
-              });
-            }
-          },
+          cacheControl: '3600',
+          upsert: false,
         });
 
       if (uploadError) {
@@ -136,13 +130,13 @@ export class MeetingAssistantAPI {
           status: string;
           created_at: string;
           processing_error?: string;
-        }) => ({
+        }): Recording => ({
           id: job.id,
           title: job.video_url.split('/').pop() || 'Unknown Recording',
           filename: job.video_url,
           fileType: 'video/mp4', // Default for now
           fileSizeBytes: 0, // Not stored yet
-          status: job.status,
+          status: job.status as Recording['status'],
           createdAt: job.created_at,
           processingError: job.processing_error,
         })
@@ -170,7 +164,7 @@ export class MeetingAssistantAPI {
 
       return {
         success: true,
-        status: data.status,
+        status: data.status as Recording['status'],
         error: data.processing_error,
       };
     } catch (error: unknown) {
