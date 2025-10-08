@@ -5,13 +5,15 @@ This project uses GitHub Actions for CI/CD and Railway for hosting the Python ba
 ## 🔧 Setup Instructions
 
 ### 1. Railway Setup
+
 1. Sign up at [railway.app](https://railway.app)
-2. Generate a Railway token: 
+2. Generate a Railway token:
    - Go to Railway Dashboard → Account Settings → Tokens
    - Create a new token with deployment permissions
    - Copy the token
 
 ### 2. GitHub Secrets Setup
+
 Go to your GitHub repo → Settings → Secrets and variables → Actions
 
 Add these secrets:
@@ -27,6 +29,7 @@ PYTHON_BACKEND_URL=https://your-app.railway.app (optional, auto-updated)
 ```
 
 ### 3. How to Get Supabase Access Token
+
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard)
 2. Click your profile → Access Tokens
 3. Create a new token with appropriate permissions
@@ -37,22 +40,26 @@ PYTHON_BACKEND_URL=https://your-app.railway.app (optional, auto-updated)
 We have three GitHub Actions workflows:
 
 #### 🔄 **Complete Stack Deployment** (`deploy-complete-stack.yml`)
+
 - **Triggers**: Changes to `python-backend/` OR `supabase/functions/`
 - **Smart Detection**: Only deploys what changed
 - **Coordination**: Updates Edge Functions with new Python backend URL
 - **Recommended**: Use this for most deployments
 
-#### 🐍 **Python Backend Only** (`python-backend-cicd.yml`) 
+#### 🐍 **Python Backend Only** (`python-backend-cicd.yml`)
+
 - **Triggers**: Changes to `python-backend/` only
 - **Features**: Testing + Railway deployment
 - **Use case**: Python-only changes
 
 #### 🌟 **Edge Functions Only** (`deploy-edge-functions.yml`)
-- **Triggers**: Changes to `supabase/functions/` only  
+
+- **Triggers**: Changes to `supabase/functions/` only
 - **Features**: Supabase function deployment + testing
 - **Use case**: Function-only changes
 
 The workflows will:
+
 1. **Detect** what changed (Python backend vs Edge Functions)
 2. **Test** the appropriate components
 3. **Deploy** only what needs updating
@@ -63,6 +70,7 @@ The workflows will:
 ## 🔄 Automatic Deployment
 
 Deployments happen automatically when:
+
 - ✅ Code is pushed to `main` branch
 - ✅ Changes are made to `python-backend/` directory
 - ✅ All tests pass
@@ -70,8 +78,9 @@ Deployments happen automatically when:
 ## 🧪 Manual Deployment
 
 You can also trigger deployments manually:
+
 1. Go to GitHub Actions tab
-2. Select "Python Backend CI/CD" workflow  
+2. Select "Python Backend CI/CD" workflow
 3. Click "Run workflow"
 
 ## 📍 After Deployment
@@ -88,18 +97,19 @@ After each successful deployment:
 ## 🔍 Monitoring
 
 - **Railway Dashboard**: Monitor app performance, logs, and metrics
-- **GitHub Actions**: View deployment history and logs  
+- **GitHub Actions**: View deployment history and logs
 - **Supabase Dashboard**: Monitor Edge Function calls and database
 
 ## 🛠 Local Development
 
 For local development, keep running:
+
 ```bash
 # Python Backend
 cd python-backend
 uvicorn app.main:app --reload --port 8000
 
-# Frontend  
+# Frontend
 cd frontend
 npm run dev
 ```
@@ -119,16 +129,19 @@ GitHub Push → GitHub Actions → Railway → Supabase Edge Function → Fronte
 ## 🔧 Troubleshooting
 
 ### Deployment Fails
+
 - Check GitHub Actions logs for errors
 - Verify all secrets are set correctly
 - Ensure Railway token has correct permissions
 
 ### Health Check Fails
+
 - Railway apps can take 1-2 minutes to start
 - Check Railway logs in dashboard
 - Verify environment variables are set
 
 ### Supabase Connection Issues
+
 - Ensure `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are correct
 - Test connection locally first
 - Check Supabase project is active
@@ -136,6 +149,7 @@ GitHub Push → GitHub Actions → Railway → Supabase Edge Function → Fronte
 ## 🎯 Production Checklist
 
 Before going live:
+
 - [ ] All GitHub secrets configured
 - [ ] Railway deployment successful
 - [ ] Supabase Edge Function updated with Railway URL

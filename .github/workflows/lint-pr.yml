@@ -8,6 +8,7 @@ on:
     paths:
       - 'frontend/**'
       - 'supabase-backend/**'
+      - 'python-backend/**'
       - '.github/workflows/lint-pr.yml'
 
 jobs:
@@ -38,6 +39,7 @@ jobs:
             **/*.tsx
             **/*.js
             **/*.jsx
+            **/*.py
       
       - name: Install frontend dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
@@ -74,16 +76,54 @@ jobs:
             echo "No frontend files to lint"
           fi
       
-      - name: Lint backend files
+      - name: Lint supabase-backend files
         if: steps.changed-files.outputs.any_changed == 'true'
         working-directory: ./supabase-backend
         run: |
           BACKEND_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '^supabase-backend/' | sed 's|^supabase-backend/||' | tr '\n' ' ')
           if [ -n "$BACKEND_FILES" ]; then
-            echo "Backend files changed: $BACKEND_FILES"
-            echo "Backend linting will be added once eslint is configured"
+            echo "Supabase backend files changed: $BACKEND_FILES"
+            echo "Supabase backend linting will be added once eslint is configured"
           else
-            echo "No backend files to lint"
+            echo "No supabase backend files to lint"
+          fi
+      
+      - name: Setup Python
+        if: steps.changed-files.outputs.any_changed == 'true'
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+      
+      - name: Install Python dependencies
+        if: steps.changed-files.outputs.any_changed == 'true'
+        working-directory: ./python-backend
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8 black
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+      
+      - name: Check Python code formatting with Black
+        if: steps.changed-files.outputs.any_changed == 'true'
+        working-directory: ./python-backend
+        run: |
+          PYTHON_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '^python-backend/.*\.py$' | tr '\n' ' ')
+          if [ -n "$PYTHON_FILES" ]; then
+            echo "Checking Python formatting: $PYTHON_FILES"
+            black --check --diff $PYTHON_FILES
+          else
+            echo "No Python files to check formatting"
+          fi
+      
+      - name: Lint Python files with flake8
+        if: steps.changed-files.outputs.any_changed == 'true'
+        working-directory: ./python-backend
+        run: |
+          PYTHON_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '^python-backend/.*\.py$' | tr '\n' ' ')
+          if [ -n "$PYTHON_FILES" ]; then
+            echo "Linting Python files: $PYTHON_FILES"
+            flake8 $PYTHON_FILES
+          else
+            echo "No Python files to lint"
           fi
       
       - name: Comment on PR

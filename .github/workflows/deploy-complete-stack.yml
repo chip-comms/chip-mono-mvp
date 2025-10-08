@@ -4,6 +4,7 @@ on:
   push:
     branches: [ main ]
     paths: 
+      - 'frontend/**'
       - 'python-backend/**'
       - 'supabase/functions/**'
       - 'supabase/config.toml'
@@ -15,6 +16,7 @@ jobs:
   detect-changes:
     runs-on: ubuntu-latest
     outputs:
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
       python-changed: ${{ steps.changes.outputs.python }}
       functions-changed: ${{ steps.changes.outputs.functions }}
     steps:
@@ -23,6 +25,8 @@ jobs:
       id: changes
       with:
         filters: |
+          frontend:
+            - 'frontend/**'
           python:
             - 'python-backend/**'
           functions:
@@ -156,13 +160,14 @@ jobs:
 
   # Create comprehensive deployment summary
   deployment-summary:
-    needs: [detect-changes, deploy-python, deploy-functions]
+    needs: [detect-changes, deploy-frontend, deploy-python, deploy-functions]
     if: always()
     runs-on: ubuntu-latest
     
     steps:
     - name: Create Summary
       env:
+        FRONTEND_CHANGED: ${{ needs.detect-changes.outputs.frontend }}
         PYTHON_CHANGED: ${{ needs.detect-changes.outputs.python }}
         FUNCTIONS_CHANGED: ${{ needs.detect-changes.outputs.functions }}
         RAILWAY_URL: ${{ needs.deploy-python.outputs.railway-url }}
@@ -171,9 +176,18 @@ jobs:
         echo "" >> $GITHUB_STEP_SUMMARY
         
         echo "## 📋 Changes Detected" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend**: ${{ needs.detect-changes.outputs.frontend == 'true' && '✅ Changed & Deployed' || '➖ No Changes' }}" >> $GITHUB_STEP_SUMMARY
         echo "- **Python Backend**: ${{ needs.detect-changes.outputs.python == 'true' && '✅ Changed & Deployed' || '➖ No Changes' }}" >> $GITHUB_STEP_SUMMARY  
         echo "- **Edge Functions**: ${{ needs.detect-changes.outputs.functions == 'true' && '✅ Changed & Deployed' || (needs.detect-changes.outputs.python == 'true' && '🔄 Updated (Python URL)' || '➖ No Changes') }}" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "$FRONTEND_CHANGED" = "true" ]; then
+          echo "## 🌐 Frontend" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed to Vercel" >> $GITHUB_STEP_SUMMARY
+          echo "- **Framework**: Next.js with TypeScript" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: Check Vercel dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
         
         if [ "$PYTHON_CHANGED" = "true" ]; then
           echo "## 🐍 Python Backend" >> $GITHUB_STEP_SUMMARY

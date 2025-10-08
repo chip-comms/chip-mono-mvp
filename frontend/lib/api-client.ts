@@ -12,14 +12,17 @@ export class MeetingAssistantAPI {
    */
   static async uploadFile(
     file: File,
-    onUploadProgress?: (progressEvent: { loaded: number; total: number }) => void
+    onUploadProgress?: (progressEvent: {
+      loaded: number;
+      total: number;
+    }) => void
   ): Promise<UploadResponse> {
     try {
       console.log('🔄 Starting file upload to Supabase...');
-      
+
       // 1. Upload to Supabase Storage (public bucket for MVP)
       const fileName = `public/${Date.now()}_${file.name}`;
-      
+
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('meeting-recordings')
         .upload(fileName, file, {
@@ -27,45 +30,46 @@ export class MeetingAssistantAPI {
             if (onUploadProgress && progress.total) {
               onUploadProgress({
                 loaded: progress.loaded,
-                total: progress.total
+                total: progress.total,
               });
             }
-          }
+          },
         });
-      
+
       if (uploadError) {
         console.error('❌ Storage upload error:', uploadError);
         throw uploadError;
       }
-      
+
       console.log('✅ File uploaded to storage:', uploadData.path);
-      
+
       // 2. Create processing job in database
       const { data: jobData, error: jobError } = await supabase
         .from('processing_jobs')
         .insert({
           video_url: uploadData.path,
-          status: 'pending'
+          status: 'pending',
         })
         .select()
         .single();
-      
+
       if (jobError) {
         console.error('❌ Job creation error:', jobError);
         throw jobError;
       }
-      
+
       console.log('✅ Processing job created:', jobData.id);
-      
+
       // 3. Trigger processing via Edge Function
       console.log('🚀 Triggering Edge Function...');
-      const { data: edgeFunctionResult, error: edgeFunctionError } = await supabase.functions.invoke('process-meeting', {
-        body: {
-          videoUrl: uploadData.path,
-          jobId: jobData.id
-        }
-      });
-      
+      const { data: edgeFunctionResult, error: edgeFunctionError } =
+        await supabase.functions.invoke('process-meeting', {
+          body: {
+            videoUrl: uploadData.path,
+            jobId: jobData.id,
+          },
+        });
+
       if (edgeFunctionError) {
         console.error('❌ Edge Function error:', edgeFunctionError);
         // Don't throw here - the job is created, we just couldn't start processing
@@ -73,20 +77,24 @@ export class MeetingAssistantAPI {
         return {
           success: true,
           recordingId: jobData.id,
-          message: 'Upload successful, but processing failed to start. Please try again.',
+          message:
+            'Upload successful, but processing failed to start. Please try again.',
         };
       }
-      
-      console.log('✅ Edge Function triggered successfully:', edgeFunctionResult);
-      
+
+      console.log(
+        '✅ Edge Function triggered successfully:',
+        edgeFunctionResult
+      );
+
       return {
         success: true,
         recordingId: jobData.id,
         message: 'Upload successful and processing job created',
       };
-      
-    } catch (error: any) {
-      const errorMessage = error?.message || 'Upload failed';
+    } catch (error: unknown) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Upload failed';
       console.error('❌ Upload failed:', errorMessage);
       return {
         success: false,
@@ -100,7 +108,7 @@ export class MeetingAssistantAPI {
    * For MVP, we'll disable this since it requires existing sample data
    */
   static async processSampleRecording(
-    sampleFilename: string
+    _sampleFilename: string
   ): Promise<UploadResponse> {
     // For MVP, just return a message that this feature is coming soon
     return {
@@ -118,10 +126,16 @@ export class MeetingAssistantAPI {
         .from('processing_jobs')
         .select('*')
         .order('created_at', { ascending: false });
-      
+
       if (error) throw error;
-      
-      return (data || []).map((job: any) => ({
+
+      return (data || []).map((job: {
+        id: string;
+        video_url: string;
+        status: string;
+        created_at: string;
+        processing_error?: string;
+      }) => ({
         id: job.id,
         title: job.video_url.split('/').pop() || 'Unknown Recording',
         filename: job.video_url,
@@ -131,7 +145,7 @@ export class MeetingAssistantAPI {
         createdAt: job.created_at,
         processingError: job.processing_error,
       }));
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch recordings:', error);
       return [];
     }
@@ -149,20 +163,20 @@ export class MeetingAssistantAPI {
         .select('status, processing_error')
         .eq('id', recordingId)
         .single();
-      
+
       if (error) throw error;
-      
+
       return {
         success: true,
         status: data.status,
         error: data.processing_error,
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch processing status:', error);
       return {
         success: false,
         status: 'failed',
-        error: error.message || 'Status check failed',
+        error: error instanceof Error ? error.message : 'Status check failed',
       };
     }
   }
@@ -179,7 +193,7 @@ export class MeetingAssistantAPI {
         .select('*')
         .eq('job_id', recordingId)
         .single();
-      
+
       if (error) {
         if (error.code === 'PGRST116') {
           // No results found
@@ -187,7 +201,7 @@ export class MeetingAssistantAPI {
         }
         throw error;
       }
-      
+
       // Transform Supabase data to Intelligence format
       return {
         recordingId: data.job_id,
@@ -200,7 +214,7 @@ export class MeetingAssistantAPI {
         communicationMetrics: data.communication_metrics || {},
         insights: data.summary, // Use summary as insights for now
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to fetch intelligence:', error);
       return null;
     }
@@ -215,7 +229,7 @@ export class MeetingAssistantAPI {
     const { data } = supabase.storage
       .from('meeting-recordings')
       .getPublicUrl(filename);
-    
+
     return data.publicUrl;
   }
 
@@ -230,31 +244,31 @@ export class MeetingAssistantAPI {
         .select('video_url')
         .eq('id', recordingId)
         .single();
-      
+
       if (fetchError) throw fetchError;
-      
+
       // Delete from database (this will cascade to meeting_analysis)
       const { error: deleteError } = await supabase
         .from('processing_jobs')
         .delete()
         .eq('id', recordingId);
-      
+
       if (deleteError) throw deleteError;
-      
+
       // Delete from storage
       if (job?.video_url) {
         const { error: storageError } = await supabase.storage
           .from('meeting-recordings')
           .remove([job.video_url]);
-        
+
         if (storageError) {
           console.warn('Storage deletion failed:', storageError);
           // Don't fail the whole operation if storage cleanup fails
         }
       }
-      
+
       return true;
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Failed to delete recording:', error);
       return false;
     }
@@ -269,7 +283,7 @@ export class MeetingAssistantAPI {
         .from('processing_jobs')
         .select('id')
         .limit(1);
-      
+
       return !error;
     } catch (error) {
       console.warn('Supabase health check failed:', error);
@@ -280,7 +294,10 @@ export class MeetingAssistantAPI {
   /**
    * Real-time subscription for job status updates
    */
-  static subscribeToJobUpdates(jobId: string, callback: (status: string) => void) {
+  static subscribeToJobUpdates(
+    jobId: string,
+    callback: (status: string) => void
+  ) {
     return supabase
       .channel(`job-${jobId}`)
       .on(
@@ -289,9 +306,9 @@ export class MeetingAssistantAPI {
           event: 'UPDATE',
           schema: 'public',
           table: 'processing_jobs',
-          filter: `id=eq.${jobId}`
+          filter: `id=eq.${jobId}`,
         },
-        (payload: any) => {
+        (payload: { new: { status: string } }) => {
           console.log('Job status update:', payload.new.status);
           callback(payload.new.status);
         }
