@@ -74,8 +74,15 @@ jobs:
           if [ -d "./frontend" ] && [ -f "./frontend/package.json" ]; then
             echo "Frontend directory found with package.json"
             cd ./frontend
-            echo "Attempting npm install..."
-            npm install
+            echo "Attempting npm ci..."
+            if [ -f "package-lock.json" ]; then
+              npm ci
+            else
+              echo "No package-lock.json found, falling back to npm install"
+              npm install
+            fi
+            echo "Verifying eslint-config-next is installed..."
+            npm list eslint-config-next || echo "eslint-config-next not found in dependencies"
           else
             echo "Cannot install frontend dependencies - no package.json found"
             ls -la ./frontend/ || echo "Frontend directory does not exist"
@@ -99,6 +106,27 @@ jobs:
               cd ./supabase-backend && npm install
             else
               echo "Cannot install supabase-backend dependencies - no package.json found"
+              exit 1
+            fi
+          fi
+      
+      - name: Verify ESLint configuration
+        if: steps.changed-files.outputs.any_changed == 'true'
+        working-directory: ./frontend
+        run: |
+          echo "Verifying ESLint configuration..."
+          npx eslint --version
+          echo "Checking if eslint-config-next is available..."
+          if npx eslint --print-config lib/supabase.ts > /dev/null 2>&1; then
+            echo "✅ ESLint configuration is valid"
+          else
+            echo "❌ ESLint configuration failed"
+            echo "Attempting to reinstall dependencies..."
+            npm install
+            if npx eslint --print-config lib/supabase.ts > /dev/null 2>&1; then
+              echo "✅ ESLint configuration is now valid after reinstall"
+            else
+              echo "❌ ESLint configuration still failing"
               exit 1
             fi
           fi
@@ -130,7 +158,7 @@ jobs:
           FRONTEND_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '^frontend/' | sed 's|^frontend/||' | tr '\n' ' ')
           if [ -n "$FRONTEND_FILES" ]; then
             echo "Linting frontend files: $FRONTEND_FILES"
-            npm run lint -- $FRONTEND_FILES
+            npx eslint $FRONTEND_FILES
           else
             echo "No frontend files to lint"
           fi
