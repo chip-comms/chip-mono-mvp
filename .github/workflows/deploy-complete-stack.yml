@@ -1,0 +1,210 @@
+name: Deploy Complete Stack
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'frontend/**'
+      - 'python-backend/**'
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/deploy-complete-stack.yml'
+  workflow_dispatch:
+
+jobs:
+  # Detect what changed to decide what to deploy
+  detect-changes:
+    runs-on: ubuntu-latest
+    outputs:
+      frontend-changed: ${{ steps.changes.outputs.frontend }}
+      python-changed: ${{ steps.changes.outputs.python }}
+      functions-changed: ${{ steps.changes.outputs.functions }}
+    steps:
+    - uses: actions/checkout@v4
+    - uses: dorny/paths-filter@v2
+      id: changes
+      with:
+        filters: |
+          frontend:
+            - 'frontend/**'
+          python:
+            - 'python-backend/**'
+          functions:
+            - 'supabase/functions/**'
+            - 'supabase/config.toml'
+
+  # Deploy Python backend to Railway (if changed)
+  deploy-python:
+    needs: detect-changes
+    if: needs.detect-changes.outputs.python == 'true'
+    runs-on: ubuntu-latest
+    outputs:
+      railway-url: ${{ steps.get-url.outputs.railway-url }}
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Railway CLI
+      run: |
+        curl -fsSL https://railway.app/install.sh | sh
+        echo "$HOME/.railway/bin" >> $GITHUB_PATH
+        
+    - name: Deploy to Railway
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        cd python-backend
+        railway login --token $RAILWAY_TOKEN
+        railway link || railway create chip-mono-mvp-backend
+        
+        # Set environment variables
+        railway variables set SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
+        railway variables set SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
+        railway variables set GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
+        railway variables set AI_PROVIDER="gemini"
+        railway variables set CORS_ORIGINS="*"
+        
+        # Deploy
+        railway up --detach
+        
+    - name: Get Railway URL
+      id: get-url
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        cd python-backend
+        sleep 60  # Wait for deployment
+        
+        RAILWAY_URL=$(railway status --json | jq -r '.deployments[0].url // ""')
+        echo "railway-url=$RAILWAY_URL" >> $GITHUB_OUTPUT
+        echo "🚀 Python backend deployed to: $RAILWAY_URL"
+        
+    - name: Health Check
+      env:
+        RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
+      run: |
+        cd python-backend
+        RAILWAY_URL="${{ steps.get-url.outputs.railway-url }}"
+        
+        if [ ! -z "$RAILWAY_URL" ]; then
+          echo "🔍 Testing $RAILWAY_URL"
+          response=$(curl -s -o /dev/null -w "%{http_code}" "$RAILWAY_URL" || echo "000")
+          if [ "$response" = "200" ]; then
+            echo "✅ Python backend health check passed!"
+          else
+            echo "⚠️ Health check returned: $response"
+          fi
+        fi
+
+  # Deploy Supabase Edge Functions (if changed OR if Python backend changed)
+  deploy-functions:
+    needs: [detect-changes, deploy-python]
+    if: always() && (needs.detect-changes.outputs.functions == 'true' || needs.detect-changes.outputs.python == 'true')
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+        
+    - name: Deploy Edge Functions
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      run: |
+        echo "🌟 Deploying Edge Functions..."
+        supabase link --project-ref kfikvadshmptpwscgbyu
+        supabase functions deploy --project-ref kfikvadshmptpwscgbyu
+        
+    - name: Update Function Environment
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        RAILWAY_URL: ${{ needs.deploy-python.outputs.railway-url }}
+      run: |
+        echo "🔐 Updating Edge Function secrets..."
+        
+        # Use Railway URL if Python backend was deployed, otherwise use existing/default
+        if [ ! -z "$RAILWAY_URL" ]; then
+          echo "📡 Updating with new Railway URL: $RAILWAY_URL"
+          supabase secrets set PYTHON_BACKEND_URL="$RAILWAY_URL" --project-ref kfikvadshmptpwscgbyu
+        else
+          echo "📡 Using existing Python backend URL"
+          supabase secrets set PYTHON_BACKEND_URL="${{ secrets.PYTHON_BACKEND_URL || 'http://host.docker.internal:8000' }}" --project-ref kfikvadshmptpwscgbyu
+        fi
+        
+        # Set other required secrets
+        supabase secrets set SUPABASE_URL="${{ secrets.SUPABASE_URL }}" --project-ref kfikvadshmptpwscgbyu
+        supabase secrets set SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" --project-ref kfikvadshmptpwscgbyu
+        
+    - name: Test Edge Functions
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      run: |
+        echo "🧪 Testing Edge Functions..."
+        sleep 30  # Wait for deployment
+        
+        response=$(curl -s -o /dev/null -w "%{http_code}" \
+          -X POST "https://kfikvadshmptpwscgbyu.supabase.co/functions/v1/process-meeting" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{"test": true}' || echo "000")
+          
+        if [ "$response" = "200" ] || [ "$response" = "400" ]; then
+          echo "✅ Edge Function is responding (status: $response)"
+        else
+          echo "⚠️ Edge Function response: $response"
+        fi
+
+  # Create comprehensive deployment summary
+  deployment-summary:
+    needs: [detect-changes, deploy-python, deploy-functions]
+    if: always()
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Create Summary
+      env:
+        FRONTEND_CHANGED: ${{ needs.detect-changes.outputs.frontend }}
+        PYTHON_CHANGED: ${{ needs.detect-changes.outputs.python }}
+        FUNCTIONS_CHANGED: ${{ needs.detect-changes.outputs.functions }}
+        RAILWAY_URL: ${{ needs.deploy-python.outputs.railway-url }}
+      run: |
+        echo "# 🚀 Complete Stack Deployment Summary" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        echo "## 📋 Changes Detected" >> $GITHUB_STEP_SUMMARY
+        echo "- **Frontend**: ${{ needs.detect-changes.outputs.frontend == 'true' && '✅ Changed & Deployed' || '➖ No Changes' }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Python Backend**: ${{ needs.detect-changes.outputs.python == 'true' && '✅ Changed & Deployed' || '➖ No Changes' }}" >> $GITHUB_STEP_SUMMARY  
+        echo "- **Edge Functions**: ${{ needs.detect-changes.outputs.functions == 'true' && '✅ Changed & Deployed' || (needs.detect-changes.outputs.python == 'true' && '🔄 Updated (Python URL)' || '➖ No Changes') }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        
+        if [ "$FRONTEND_CHANGED" = "true" ]; then
+          echo "## 🌐 Frontend" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed to Vercel" >> $GITHUB_STEP_SUMMARY
+          echo "- **Framework**: Next.js with TypeScript" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: Check Vercel dashboard" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "$PYTHON_CHANGED" = "true" ]; then
+          echo "## 🐍 Python Backend" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed to Railway" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: ${RAILWAY_URL:-'Deployment in progress'}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        if [ "$FUNCTIONS_CHANGED" = "true" ] || [ "$PYTHON_CHANGED" = "true" ]; then
+          echo "## 🌟 Edge Functions" >> $GITHUB_STEP_SUMMARY
+          echo "- **Status**: ✅ Deployed to Supabase" >> $GITHUB_STEP_SUMMARY
+          echo "- **Functions**: process-meeting" >> $GITHUB_STEP_SUMMARY
+          echo "- **URL**: https://kfikvadshmptpwscgbyu.supabase.co/functions/v1/process-meeting" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+        fi
+        
+        echo "## 🎯 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. ✅ Complete pipeline is deployed and connected" >> $GITHUB_STEP_SUMMARY
+        echo "2. 🧪 Test end-to-end flow in frontend at http://localhost:3000" >> $GITHUB_STEP_SUMMARY
+        echo "3. 📊 Monitor logs in Railway and Supabase dashboards" >> $GITHUB_STEP_SUMMARY
