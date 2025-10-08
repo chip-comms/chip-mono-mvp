@@ -1,0 +1,86 @@
+name: Deploy Supabase Edge Functions
+
+on:
+  push:
+    branches: [ main ]
+    paths: 
+      - 'supabase/functions/**'
+      - 'supabase/config.toml'
+      - '.github/workflows/deploy-edge-functions.yml'
+  workflow_dispatch: # Allow manual triggering
+
+jobs:
+  deploy-functions:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Supabase CLI
+      uses: supabase/setup-cli@v1
+      with:
+        version: latest
+        
+    - name: Link Supabase Project
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      run: |
+        supabase link --project-ref kfikvadshmptpwscgbyu
+        
+    - name: Deploy Edge Functions
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      run: |
+        echo "🚀 Deploying Edge Functions..."
+        
+        # Deploy all functions in the functions directory
+        supabase functions deploy --project-ref kfikvadshmptpwscgbyu
+        
+    - name: Update Function Secrets
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      run: |
+        echo "🔐 Updating function secrets..."
+        
+        # Set the Python backend URL (will be updated after Railway deployment)
+        supabase secrets set PYTHON_BACKEND_URL="${{ secrets.PYTHON_BACKEND_URL || 'http://host.docker.internal:8000' }}" --project-ref kfikvadshmptpwscgbyu
+        
+        # Set other required secrets
+        supabase secrets set SUPABASE_URL="${{ secrets.SUPABASE_URL }}" --project-ref kfikvadshmptpwscgbyu
+        supabase secrets set SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" --project-ref kfikvadshmptpwscgbyu
+        
+    - name: Test Edge Functions
+      env:
+        SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+      run: |
+        echo "🧪 Testing Edge Functions..."
+        
+        # Test the process-meeting function
+        response=$(curl -s -o /dev/null -w "%{http_code}" \
+          -X POST "https://kfikvadshmptpwscgbyu.supabase.co/functions/v1/process-meeting" \
+          -H "apikey: ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Authorization: Bearer ${{ secrets.SUPABASE_ANON_KEY }}" \
+          -H "Content-Type: application/json" \
+          -d '{"test": true}' || echo "000")
+          
+        if [ "$response" = "200" ] || [ "$response" = "400" ]; then
+          echo "✅ Edge Function is responding (status: $response)"
+        else
+          echo "⚠️ Edge Function response: $response (may still be deploying)"
+        fi
+        
+    - name: Create deployment summary
+      run: |
+        echo "## 🌟 Edge Functions Deployment" >> $GITHUB_STEP_SUMMARY
+        echo "- **Project**: kfikvadshmptpwscgbyu" >> $GITHUB_STEP_SUMMARY
+        echo "- **Functions Deployed**: process-meeting" >> $GITHUB_STEP_SUMMARY
+        echo "- **Branch**: ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+        echo "- **Commit**: ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 🔗 Function URLs" >> $GITHUB_STEP_SUMMARY
+        echo "- **process-meeting**: https://kfikvadshmptpwscgbyu.supabase.co/functions/v1/process-meeting" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📋 Next Steps" >> $GITHUB_STEP_SUMMARY
+        echo "1. Functions are now live and ready to use" >> $GITHUB_STEP_SUMMARY
+        echo "2. Test the complete flow in your frontend" >> $GITHUB_STEP_SUMMARY

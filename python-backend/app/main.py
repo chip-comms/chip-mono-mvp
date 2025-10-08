@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.routes import health, video, audio
+from app.routes import health, video, audio, analysis
 
 # Load environment variables
 load_dotenv()
@@ -60,6 +60,7 @@ app.add_middleware(
 app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(video.router, prefix="/api/video", tags=["video"])
 app.include_router(audio.router, prefix="/api/audio", tags=["audio"])
+app.include_router(analysis.router, prefix="/api", tags=["analysis"])
 
 
 @app.get("/")
@@ -69,5 +70,8 @@ async def root():
         "service": "Meeting Intelligence - Video Processing",
         "status": "running",
         "docs": "/docs",
+        "supabase_configured": bool(os.getenv("SUPABASE_URL")),
+        "ai_provider": os.getenv("AI_PROVIDER", "gemini"),
+        "environment": "production" if os.getenv("PORT") else "development"
     }
 
