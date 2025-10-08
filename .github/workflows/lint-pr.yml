@@ -71,22 +71,15 @@ jobs:
       - name: Install frontend dependencies
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          if [ -d "./frontend" ] && [ -f "./frontend/package-lock.json" ]; then
-            echo "Frontend directory and package-lock.json found"
+          if [ -d "./frontend" ] && [ -f "./frontend/package.json" ]; then
+            echo "Frontend directory found with package.json"
             cd ./frontend
-            echo "Attempting npm ci..."
-            if ! npm ci; then
-              echo "npm ci failed, trying npm install as fallback..."
-              npm install
-            fi
+            echo "Attempting npm install..."
+            npm install
           else
-            echo "Frontend directory or package-lock.json not found, attempting npm install"
-            if [ -d "./frontend" ] && [ -f "./frontend/package.json" ]; then
-              cd ./frontend && npm install
-            else
-              echo "Cannot install frontend dependencies - no package.json found"
-              exit 1
-            fi
+            echo "Cannot install frontend dependencies - no package.json found"
+            ls -la ./frontend/ || echo "Frontend directory does not exist"
+            exit 1
           fi
       
       - name: Install backend dependencies
