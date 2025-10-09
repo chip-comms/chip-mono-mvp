@@ -6,8 +6,8 @@ on:
     paths: 
       - 'frontend/**'
       - 'python-backend/**'
-      - 'supabase/functions/**'
-      - 'supabase/config.toml'
+      - 'supabase-backend/functions/**'
+      - 'supabase-backend/config.toml'
       - '.github/workflows/deploy-complete-stack.yml'
   workflow_dispatch:
 
@@ -30,8 +30,8 @@ jobs:
           python:
             - 'python-backend/**'
           functions:
-            - 'supabase/functions/**'
-            - 'supabase/config.toml'
+            - 'supabase-backend/functions/**'
+            - 'supabase-backend/config.toml'
 
   # Deploy Python backend to Railway (if changed)
   deploy-python:
@@ -113,6 +113,7 @@ jobs:
         SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
       run: |
         echo "🌟 Deploying Edge Functions..."
+        cd supabase-backend
         supabase link --project-ref kfikvadshmptpwscgbyu
         supabase functions deploy --project-ref kfikvadshmptpwscgbyu
         
@@ -122,6 +123,8 @@ jobs:
         RAILWAY_URL: ${{ needs.deploy-python.outputs.railway-url }}
       run: |
         echo "🔐 Updating Edge Function secrets..."
+        
+        cd supabase-backend
         
         # Use Railway URL if Python backend was deployed, otherwise use existing/default
         if [ ! -z "$RAILWAY_URL" ]; then

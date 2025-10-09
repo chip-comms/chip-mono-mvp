@@ -1,102 +1,263 @@
 # Meeting Intelligence Backend
 
-Backend logic for the meeting intelligence assistant. This contains all the business logic, AI processing, and storage adapters.
+This directory contains the complete backend for the Meeting Intelligence Assistant - including database schema, business logic, AI processing, and Supabase configuration.
 
-## Structure
+## 📁 Structure
 
 ```
 supabase-backend/
-├── lib/
-│   ├── ai/               # Portable AI processing (works in Node & Deno)
-│   │   ├── transcription.ts   # Whisper API integration
-│   │   ├── analysis.ts        # GPT-4 analysis
-│   │   └── metrics.ts         # Communication metrics calculation
-│   ├── storage/          # Storage adapters
-│   │   └── local.ts           # Local filesystem implementation
-│   ├── data/             # Data adapters
-│   │   └── local.ts           # Local JSON file implementation
-│   ├── types.ts          # TypeScript type definitions
-│   └── config.ts         # Configuration
-├── storage/              # Local file storage
-│   └── uploads/          # Uploaded files
-└── data/                 # Local JSON database
-    ├── recordings.json   # Recordings metadata
-    └── intelligence/     # Intelligence results
+├── config.toml                    # Supabase project configuration
+├── migrations/                    # SQL migration files
+├── functions/                     # Supabase Edge Functions
+│   └── process-meeting/
+├── database.types.ts              # Generated TypeScript types
+├── lib/                           # Business logic (imported by frontend)
+│   ├── ai/                        # AI processing modules
+│   │   ├── transcription.ts       # Whisper API integration
+│   │   ├── analysis.ts            # GPT-4 analysis
+│   │   └── metrics.ts             # Communication metrics
+│   ├── storage/                   # Storage adapters
+│   │   ├── local.ts               # Local filesystem
+│   │   └── supabase.ts            # Supabase storage
+│   ├── data/                      # Data adapters
+│   │   ├── local.ts               # Local JSON files
+│   │   └── supabase.ts            # Supabase database
+│   ├── types.ts                   # TypeScript definitions
+│   └── config.ts                  # Configuration
+├── api/                           # API route templates
+├── storage/                       # Local file storage
+└── data/                          # Local JSON database
 ```
 
-## Setup
+## 🗄️ Current Schema
+
+The database contains two main tables:
+
+### `processing_jobs`
+
+Tracks video processing jobs and their status.
+
+| Column             | Type        | Description                                        |
+| ------------------ | ----------- | -------------------------------------------------- |
+| `id`               | uuid        | Unique identifier (primary key)                    |
+| `video_url`        | text        | URL or path to the video file                      |
+| `status`           | text        | Job status: pending, processing, completed, failed |
+| `created_at`       | timestamptz | When the job was created                           |
+| `updated_at`       | timestamptz | When the job was last updated                      |
+| `processing_error` | text        | Error message if processing failed                 |
+| `python_job_id`    | text        | Reference to Python backend job ID                 |
+
+### `meeting_analysis`
+
+Stores AI-generated analysis results from processed meetings.
+
+| Column                  | Type        | Description                                |
+| ----------------------- | ----------- | ------------------------------------------ |
+| `id`                    | uuid        | Unique identifier (primary key)            |
+| `job_id`                | uuid        | Foreign key to processing_jobs             |
+| `transcript`            | jsonb       | Full transcript with segments and speakers |
+| `summary`               | text        | AI-generated meeting summary               |
+| `action_items`          | jsonb       | Extracted action items                     |
+| `key_topics`            | jsonb       | Key topics discussed                       |
+| `sentiment`             | jsonb       | Sentiment analysis results                 |
+| `speaker_stats`         | jsonb       | Statistics for each speaker                |
+| `communication_metrics` | jsonb       | Communication metrics and insights         |
+| `created_at`            | timestamptz | When the analysis was created              |
+
+## 🚀 Quick Start
+
+Use the database operations script for common tasks:
 
 ```bash
-# Install dependencies
-npm install
+# Make script executable
+chmod +x ../db-ops.sh
 
-# Create environment file
-cp .env.example .env.local
-# Edit .env.local and add your OPENAI_API_KEY
+# View all available commands
+../db-ops.sh help
 
-# Create storage directories
-mkdir -p storage/uploads
-mkdir -p data/intelligence
-echo "[]" > data/recordings.json
-
-# Install FFmpeg (required for video processing)
-# macOS:
-brew install ffmpeg
-# Ubuntu:
-sudo apt install ffmpeg
+# Generate TypeScript types
+../db-ops.sh generate-types
 ```
 
-## Usage
+## 📝 Migration Workflow
 
-The backend code is imported by Next.js API routes in the frontend application. When you run the frontend dev server, it will use these modules.
+### 1. Create a New Migration
 
-## Migration to Supabase Edge Functions
+```bash
+# Create empty migration file
+../db-ops.sh migration add_user_preferences
 
-When ready to deploy, convert the API routes to Edge Functions:
+# Edit the generated file
+vim migrations/YYYYMMDDHHMMSS_add_user_preferences.sql
+```
 
-### What Stays the Same
+### 2. Test Locally (Optional)
 
-- ✅ All `lib/ai/*` modules (100% portable)
-- ✅ `lib/types.ts` (shared types)
-- ✅ `lib/config.ts` (just update env vars)
+```bash
+# Start local Supabase (requires Docker)
+../db-ops.sh start
 
-### What Changes
+# Apply migrations locally
+../db-ops.sh reset
+```
 
-- 🔄 `lib/storage/local.ts` → Create `lib/storage/supabase.ts`
-- 🔄 `lib/data/local.ts` → Create `lib/data/supabase.ts`
-- 🔄 API routes → Edge Functions (different syntax, same logic)
+### 3. Apply to Production
 
-The portable AI modules can be directly imported into Deno edge functions!
+```bash
+# Push migrations to remote database
+../db-ops.sh push
+```
 
-## Testing AI Modules
+### 4. Generate Types
 
-You can test the portable modules independently:
+```bash
+# Update TypeScript types after schema changes
+../db-ops.sh generate-types
+```
+
+## 🧠 Business Logic
+
+The `lib/` directory contains portable business logic that can be imported by frontend API routes or Edge Functions:
+
+### AI Processing (`lib/ai/`)
+
+- **`transcription.ts`**: Whisper API integration for audio transcription
+- **`analysis.ts`**: GPT-4 analysis for meeting insights
+- **`metrics.ts`**: Communication metrics calculation
+
+### Storage Adapters (`lib/storage/`)
+
+- **`local.ts`**: Local filesystem storage for development
+- **`supabase.ts`**: Supabase Storage for production
+
+### Data Adapters (`lib/data/`)
+
+- **`local.ts`**: Local JSON file persistence for development
+- **`supabase.ts`**: Supabase database operations for production
+
+### Usage in Frontend
+
+The frontend API routes import these modules directly:
 
 ```typescript
-import { transcribeAudio } from './lib/ai/transcription';
-import { analyzeTranscript } from './lib/ai/analysis';
-import { calculateCommunicationMetrics } from './lib/ai/metrics';
-
-// Load your audio file
-const audioFile = new File([buffer], 'test.mp3', { type: 'audio/mpeg' });
-
-// Transcribe
-const transcript = await transcribeAudio(audioFile, process.env.OPENAI_API_KEY);
-
-// Analyze
-const analysis = await analyzeTranscript(
-  transcript,
-  process.env.OPENAI_API_KEY
-);
-
-// Calculate metrics
-const metrics = calculateCommunicationMetrics(transcript);
-
-console.log({ transcript, analysis, metrics });
+import { LocalStorageAdapter } from '@/supabase-backend/lib/storage/local';
+import { LocalDataAdapter } from '@/supabase-backend/lib/data/local';
+import type { Recording } from '@/supabase-backend/lib/types';
 ```
 
-## Dependencies
+## 📊 Database Connection
 
-- `openai` - OpenAI API client
-- `fluent-ffmpeg` - FFmpeg wrapper for audio extraction
-- Standard Node.js `fs`, `path` modules (will be replaced for Deno)
+- **Project ID**: `kfikvadshmptpwscgbyu`
+- **Region**: East US (North Virginia)
+- **Host**: `aws-1-us-east-1.pooler.supabase.com`
+- **Database**: `postgres`
+- **Username**: `postgres.kfikvadshmptpwscgbyu`
+
+Connection details are available via:
+
+```bash
+../db-ops.sh connect
+```
+
+## 🔧 TypeScript Integration
+
+Import the generated types in your code:
+
+```typescript
+import { Database, Tables } from './supabase-backend/database.types';
+
+// Use table types
+type ProcessingJob = Tables<'processing_jobs'>;
+type MeetingAnalysis = Tables<'meeting_analysis'>;
+
+// Create Supabase client with types
+const supabase = createClient<Database>(url, key);
+```
+
+## 📚 Common Operations
+
+### Query Examples
+
+```typescript
+// Get all processing jobs
+const { data: jobs } = await supabase
+  .from('processing_jobs')
+  .select('*')
+  .order('created_at', { ascending: false });
+
+// Get job with analysis
+const { data: jobWithAnalysis } = await supabase
+  .from('processing_jobs')
+  .select(
+    `
+    *,
+    meeting_analysis (*)
+  `
+  )
+  .eq('id', jobId)
+  .single();
+
+// Create new processing job
+const { data: newJob } = await supabase
+  .from('processing_jobs')
+  .insert({
+    video_url: 'path/to/video.mp4',
+    status: 'pending',
+  })
+  .select()
+  .single();
+```
+
+### Status Updates
+
+```typescript
+// Update job status
+await supabase
+  .from('processing_jobs')
+  .update({
+    status: 'completed',
+    updated_at: new Date().toISOString(),
+  })
+  .eq('id', jobId);
+
+// Save analysis results
+await supabase.from('meeting_analysis').insert({
+  job_id: jobId,
+  transcript: transcriptData,
+  summary: aiSummary,
+  action_items: actionItems,
+  // ... other fields
+});
+```
+
+## 🛠️ Utilities
+
+### Automated `updated_at`
+
+The `processing_jobs` table has a trigger that automatically updates the `updated_at` column on any UPDATE operation.
+
+### Indexes
+
+Performance indexes are created for:
+
+- `processing_jobs.status`
+- `processing_jobs.created_at`
+- `meeting_analysis.job_id`
+- `meeting_analysis.created_at`
+
+### Foreign Key Constraints
+
+- `meeting_analysis.job_id` references `processing_jobs.id` with `ON DELETE CASCADE`
+
+## 🚨 Important Notes
+
+1. **Migrations are irreversible** - Always test locally first
+2. **Backup before major changes** - Use Supabase dashboard to create backups
+3. **Type safety** - Regenerate types after schema changes
+4. **Docker required** - Local development needs Docker Desktop running
+
+## 📖 Resources
+
+- [Supabase CLI Documentation](https://supabase.com/docs/reference/cli)
+- [Database Functions](https://supabase.com/docs/guides/database/functions)
+- [Row Level Security](https://supabase.com/docs/guides/auth/row-level-security)

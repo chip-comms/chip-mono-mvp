@@ -104,8 +104,11 @@ PYTHON_BACKEND_URL=http://localhost:8000  # For production
 ├── frontend/                    # Next.js app (primary server)
 │   ├── app/api/                # API routes import supabase-backend
 │   └── public/uploads/         # Served static files
-├── supabase-backend/           # Portable library (not a server)
-│   ├── lib/                    # Core logic imported by frontend
+├── supabase-backend/           # Complete Supabase project + business logic
+│   ├── config.toml             # Supabase project configuration
+│   ├── migrations/             # Database schema migrations
+│   ├── functions/              # Supabase Edge Functions
+│   ├── lib/                    # Business logic imported by frontend
 │   │   ├── ai/                 # Transcription, analysis, metrics
 │   │   ├── storage/            # File storage adapters
 │   │   └── data/               # Data persistence adapters

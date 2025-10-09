@@ -14,9 +14,9 @@ case "${1:-help}" in
   "pull")
     echo "⬇️  Pulling current schema from remote database..."
     echo "Note: Docker Desktop must be running for this command"
-    supabase db pull -p "zhv!YWC8zuq@qkj3vru"
+    cd supabase-backend && supabase db pull -p "zhv!YWC8zuq@qkj3vru"
     echo "✅ Schema pulled successfully!"
-    echo "Check supabase/migrations/ for the generated files."
+    echo "Check supabase-backend/migrations/ for the generated files."
     ;;
     
   "diff")
@@ -26,13 +26,13 @@ case "${1:-help}" in
       exit 1
     fi
     echo "📝 Creating migration diff: $2"
-    supabase db diff --file "$2"
-    echo "✅ Migration file created in supabase/migrations/"
+    cd supabase-backend && supabase db diff --file "$2"
+    echo "✅ Migration file created in supabase-backend/migrations/"
     ;;
     
   "push")
     echo "⬆️  Pushing migrations to remote database..."
-    supabase db push -p "zhv!YWC8zuq@qkj3vru"
+    cd supabase-backend && supabase db push -p "zhv!YWC8zuq@qkj3vru"
     echo "✅ Migrations pushed successfully!"
     ;;
     
@@ -41,7 +41,7 @@ case "${1:-help}" in
     read -p "Are you sure? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      supabase db reset
+      cd supabase-backend && supabase db reset
       echo "✅ Database reset complete!"
     else
       echo "Cancelled."
@@ -50,26 +50,26 @@ case "${1:-help}" in
     
   "status")
     echo "📊 Checking database status..."
-    supabase status
+    cd supabase-backend && supabase status
     ;;
     
   "start")
     echo "🚀 Starting local Supabase services..."
-    supabase start
+    cd supabase-backend && supabase start
     echo "✅ Local services started!"
     echo "Studio: http://localhost:54323"
     ;;
     
   "stop")
     echo "🛑 Stopping local Supabase services..."
-    supabase stop
+    cd supabase-backend && supabase stop
     echo "✅ Local services stopped!"
     ;;
     
   "generate-types")
     echo "🏗️  Generating TypeScript types..."
-    supabase gen types typescript --project-id=$PROJECT_ID > supabase/database.types.ts
-    echo "✅ Types generated in supabase/database.types.ts"
+    supabase gen types typescript --project-id=$PROJECT_ID > supabase-backend/database.types.ts
+    echo "✅ Types generated in supabase-backend/database.types.ts"
     ;;
     
   "connect")
@@ -92,8 +92,8 @@ case "${1:-help}" in
     fi
     TIMESTAMP=$(date +%Y%m%d%H%M%S)
     FILENAME="$TIMESTAMP_$2.sql"
-    touch "supabase/migrations/$FILENAME"
-    echo "📝 Created new migration file: supabase/migrations/$FILENAME"
+    touch "supabase-backend/migrations/$FILENAME"
+    echo "📝 Created new migration file: supabase-backend/migrations/$FILENAME"
     echo ""
     echo "Add your SQL changes to this file, then run:"
     echo "./db-ops.sh push"
