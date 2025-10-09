@@ -57,12 +57,19 @@ export async function transcribeAudio(
 
       // Convert local format to our standard Transcript format
       return {
-        segments: result.segments.map((seg: { start: number; end: number; text: string; speaker?: string }) => ({
-          start: seg.start,
-          end: seg.end,
-          text: seg.text,
-          speaker: seg.speaker || 'Speaker 1',
-        })),
+        segments: result.segments.map(
+          (seg: {
+            start: number;
+            end: number;
+            text: string;
+            speaker?: string;
+          }) => ({
+            start: seg.start,
+            end: seg.end,
+            text: seg.text,
+            speaker: seg.speaker || 'Speaker 1',
+          })
+        ),
         fullText: result.text,
         durationSeconds: result.durationSeconds,
         speakers: result.speakers.map((s: { name: string }) => s.name),
@@ -92,7 +99,9 @@ export async function getAvailableTranscriptionModes(apiKey?: string): Promise<{
   recommended: TranscriptionMode;
 }> {
   const hasValidApiKey = !!(
-    apiKey && apiKey !== 'sk-your-key-here' && apiKey.length > 20
+    apiKey &&
+    apiKey !== 'sk-your-key-here' &&
+    apiKey.length > 20
   );
   const hasLocalWhisper = await isWhisperInstalled();
 

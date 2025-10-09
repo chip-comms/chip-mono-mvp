@@ -2,7 +2,12 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import { MeetingAssistantAPI } from '@/lib/api-client';
-import type { Recording, Intelligence, ActionItem, KeyTopic } from '@/lib/types';
+import type {
+  Recording,
+  Intelligence,
+  ActionItem,
+  KeyTopic,
+} from '@/lib/types';
 import {
   AlertCircle,
   CheckCircle,
@@ -478,13 +483,17 @@ export default function Home() {
                     )}
 
                     {/* Communication Insights */}
-                    {intelligence.communicationMetrics?.companyValuesAlignment?.insights && (
+                    {intelligence.communicationMetrics?.companyValuesAlignment
+                      ?.insights && (
                       <div className="mb-6">
                         <h4 className="font-medium text-gray-700 mb-2">
                           💬 Communication Insights:
                         </h4>
                         <p className="text-gray-600 bg-blue-50 p-3 rounded">
-                          {intelligence.communicationMetrics.companyValuesAlignment.insights}
+                          {
+                            intelligence.communicationMetrics
+                              .companyValuesAlignment.insights
+                          }
                         </p>
                       </div>
                     )}
