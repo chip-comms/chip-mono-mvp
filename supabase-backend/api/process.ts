@@ -230,7 +230,7 @@ async function extractAudio(
         reject(error);
       }
     };
-    
+
     processAsync().catch(reject);
   });
 }
