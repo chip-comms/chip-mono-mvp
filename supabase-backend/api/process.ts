@@ -188,45 +188,49 @@ async function extractAudio(
   videoBuffer: Uint8Array,
   contentType: string
 ): Promise<string> {
-  return new Promise(async (resolve, reject) => {
-    // Create temp files
-    const tempDir = os.tmpdir();
-    const videoExt = contentType.split('/')[1] || 'mp4';
-    const videoPath = path.join(tempDir, `video-${Date.now()}.${videoExt}`);
-    const audioPath = path.join(tempDir, `audio-${Date.now()}.mp3`);
+  return new Promise((resolve, reject) => {
+    const processAsync = async () => {
+      // Create temp files
+      const tempDir = os.tmpdir();
+      const videoExt = contentType.split('/')[1] || 'mp4';
+      const videoPath = path.join(tempDir, `video-${Date.now()}.${videoExt}`);
+      const audioPath = path.join(tempDir, `audio-${Date.now()}.mp3`);
 
-    try {
-      // Write video to temp file
-      await fs.writeFile(videoPath, videoBuffer);
+      try {
+        // Write video to temp file
+        await fs.writeFile(videoPath, videoBuffer);
 
-      // Extract audio using FFmpeg
-      ffmpeg(videoPath)
-        .output(audioPath)
-        .audioCodec('libmp3lame')
-        .audioBitrate('128k')
-        .noVideo()
-        .on('end', async () => {
-          // Clean up video file
-          try {
-            await fs.unlink(videoPath);
-          } catch (error) {
-            console.error('Failed to clean up video file:', error);
-          }
-          resolve(audioPath);
-        })
-        .on('error', async (error) => {
-          // Clean up on error
-          try {
-            await fs.unlink(videoPath);
-            await fs.unlink(audioPath).catch(() => {});
-          } catch (cleanupError) {
-            console.error('Failed to clean up files:', cleanupError);
-          }
-          reject(new Error(`FFmpeg error: ${error.message}`));
-        })
-        .run();
-    } catch (error) {
-      reject(error);
-    }
+        // Extract audio using FFmpeg
+        ffmpeg(videoPath)
+          .output(audioPath)
+          .audioCodec('libmp3lame')
+          .audioBitrate('128k')
+          .noVideo()
+          .on('end', async () => {
+            // Clean up video file
+            try {
+              await fs.unlink(videoPath);
+            } catch (error) {
+              console.error('Failed to clean up video file:', error);
+            }
+            resolve(audioPath);
+          })
+          .on('error', async (error) => {
+            // Clean up on error
+            try {
+              await fs.unlink(videoPath);
+              await fs.unlink(audioPath).catch(() => {});
+            } catch (cleanupError) {
+              console.error('Failed to clean up files:', cleanupError);
+            }
+            reject(new Error(`FFmpeg error: ${error.message}`));
+          })
+          .run();
+      } catch (error) {
+        reject(error);
+      }
+    };
+    
+    processAsync().catch(reject);
   });
 }

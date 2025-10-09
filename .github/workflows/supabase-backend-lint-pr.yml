@@ -78,7 +78,7 @@ jobs:
           if [ -n "$BACKEND_FILES" ]; then
             echo "Linting supabase-backend files..."
             cd supabase-backend
-            npx eslint . --ext .ts,.js
+            npx eslint .
           else
             echo "No supabase-backend files to lint"
           fi
