@@ -93,8 +93,6 @@ jobs:
         # Set environment variables
         railway variables set SUPABASE_URL="${{ secrets.SUPABASE_URL }}"
         railway variables set SUPABASE_SERVICE_ROLE_KEY="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}"
-        railway variables set GEMINI_API_KEY="${{ secrets.GEMINI_API_KEY }}"
-        railway variables set AI_PROVIDER="gemini"
         railway variables set CORS_ORIGINS="*"
         railway variables set UPLOAD_DIR="./storage/uploads"
         railway variables set TEMP_DIR="./storage/temp"
