@@ -5,15 +5,60 @@
  */
 
 // ============================================================================
-// Recording Types
+// Multi-Tenant Types
+// ============================================================================
+
+export type UserRole = 'owner' | 'admin' | 'member' | 'viewer';
+
+export interface Organization {
+  id: string;
+  name: string;
+  slug: string;
+  settings?: Record<string, unknown>;
+  storage_quota_mb: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface User {
+  id: string; // Matches Supabase Auth user ID
+  email: string;
+  full_name?: string;
+  avatar_url?: string;
+  organization_id: string;
+  role: UserRole;
+  created_at: string;
+  updated_at: string;
+}
+
+// ============================================================================
+// Recording Types (Enhanced)
 // ============================================================================
 
 export type RecordingStatus =
   | 'uploading'
+  | 'pending'
   | 'processing'
   | 'completed'
   | 'failed';
 
+export interface ProcessingJob {
+  id: string;
+  storage_path?: string; // Supabase Storage path
+  original_filename?: string;
+  status: RecordingStatus;
+  processing_error?: string;
+  python_job_id?: string;
+  user_id: string;
+  organization_id: string;
+  file_size_mb?: number;
+  duration_seconds?: number;
+  delete_after?: string;
+  created_at: string;
+  updated_at: string;
+}
+
+// Legacy interface for backward compatibility
 export interface Recording {
   id: string;
   title: string;
@@ -116,6 +161,63 @@ export interface CommunicationMetrics {
   insights: string; // AI-generated insights
 }
 
+// ============================================================================
+// Enhanced Analytics Types
+// ============================================================================
+
+export interface BehavioralInsights {
+  face_detection?: {
+    engagement_score: number;
+    eye_contact_percentage: number;
+    facial_expressions: {
+      positive: number;
+      neutral: number;
+      negative: number;
+    };
+  };
+  prosody_analysis?: {
+    speaking_rate: string;
+    pitch_variation: number;
+    volume_consistency: number;
+    pause_patterns: string;
+  };
+  gesture_analysis?: {
+    hand_gestures: number;
+    body_language_confidence: number;
+  };
+}
+
+export interface EnhancedCommunicationMetrics extends CommunicationMetrics {
+  clarity: number;
+  empathy: number;
+  confidence: number;
+  collaboration: number;
+  leadership: number;
+  listening: number;
+  engagement: number;
+  assertiveness: number;
+  adaptability: number;
+  influence: number;
+  authenticity: number;
+  emotional_intelligence: number;
+  decision_making: number;
+  overall_score: number;
+}
+
+export interface MeetingAnalysis {
+  id: string;
+  job_id: string;
+  user_id: string;
+  organization_id: string;
+  summary?: string;
+  transcript?: Transcript;
+  speaker_stats?: SpeakerStats[];
+  communication_metrics?: EnhancedCommunicationMetrics;
+  behavioral_insights?: BehavioralInsights;
+  created_at: string;
+}
+
+// Legacy interface for backward compatibility
 export interface Intelligence {
   recordingId: string;
   transcript: Transcript;
@@ -193,6 +295,46 @@ export interface StorageAdapter {
 // Data Adapter Interface
 // ============================================================================
 
+export interface MultiTenantDataAdapter {
+  // Organizations
+  getOrganization(id: string): Promise<Organization | null>;
+  getOrganizationBySlug(slug: string): Promise<Organization | null>;
+  saveOrganization(organization: Organization): Promise<void>;
+  updateOrganization(id: string, updates: Partial<Organization>): Promise<void>;
+
+  // Users
+  getUser(id: string): Promise<User | null>;
+  getUsersByOrganization(organizationId: string): Promise<User[]>;
+  saveUser(user: User): Promise<void>;
+  updateUser(id: string, updates: Partial<User>): Promise<void>;
+
+  // Processing Jobs
+  getProcessingJobs(
+    organizationId: string,
+    userId?: string
+  ): Promise<ProcessingJob[]>;
+  getProcessingJob(id: string): Promise<ProcessingJob | null>;
+  saveProcessingJob(job: ProcessingJob): Promise<void>;
+  updateProcessingJob(
+    id: string,
+    updates: Partial<ProcessingJob>
+  ): Promise<void>;
+  deleteProcessingJob(id: string): Promise<void>;
+
+  // Meeting Analysis
+  getMeetingAnalysis(jobId: string): Promise<MeetingAnalysis | null>;
+  getMeetingAnalysesByUser(
+    userId: string,
+    organizationId: string
+  ): Promise<MeetingAnalysis[]>;
+  getMeetingAnalysesByOrganization(
+    organizationId: string
+  ): Promise<MeetingAnalysis[]>;
+  saveMeetingAnalysis(analysis: MeetingAnalysis): Promise<void>;
+  deleteMeetingAnalysis(id: string): Promise<void>;
+}
+
+// Legacy interface for backward compatibility
 export interface DataAdapter {
   // Recordings
   getRecordings(): Promise<Recording[]>;

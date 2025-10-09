@@ -91,7 +91,7 @@ export async function transcribeAudioLocal(
   // Save audio file to temporary location
   const tempDir = os.tmpdir();
   const tempAudioPath = path.join(tempDir, `audio-${Date.now()}.mp3`);
-  
+
   // Declare output files outside try block for cleanup
   const outputPath = tempAudioPath.replace('.mp3', '.txt');
   const outputFile = tempAudioPath.replace('.mp3', '');
