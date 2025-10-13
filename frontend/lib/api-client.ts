@@ -129,24 +129,24 @@ export class MeetingAssistantAPI {
 
       return (data || []).map(
         (job: {
+          created_at: string | null;
+          delete_after: string | null;
+          duration_seconds: number | null;
+          file_size_mb: number | null;
           id: string;
-          storage_path: string | null;
+          organization_id: string;
           original_filename: string | null;
+          processing_error: string | null;
+          python_job_id: string | null;
           status:
             | 'uploading'
             | 'pending'
             | 'processing'
             | 'completed'
             | 'failed';
-          created_at: string;
-          processing_error: string | null;
-          file_size_mb: number | null;
-          python_job_id: string | null;
+          storage_path: string | null;
+          updated_at: string | null;
           user_id: string;
-          organization_id: string;
-          duration_seconds: number | null;
-          delete_after: string | null;
-          updated_at: string;
         }): Recording => ({
           id: job.id,
           title:
@@ -157,7 +157,7 @@ export class MeetingAssistantAPI {
           fileType: 'video/mp4', // Default for now
           fileSizeBytes: job.file_size_mb ? job.file_size_mb * 1024 * 1024 : 0,
           status: job.status as Recording['status'],
-          createdAt: job.created_at,
+          createdAt: job.created_at || new Date().toISOString(),
           processingError: job.processing_error || undefined,
         })
       );
