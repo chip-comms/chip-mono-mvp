@@ -52,6 +52,7 @@ export type Database = {
           avatar_url: string | null;
           organization_id: string;
           role: Database['public']['Enums']['user_role'];
+          first_login_completed: boolean;
           created_at: string;
           updated_at: string;
         };
@@ -62,6 +63,7 @@ export type Database = {
           avatar_url?: string | null;
           organization_id: string;
           role?: Database['public']['Enums']['user_role'];
+          first_login_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };
@@ -72,6 +74,7 @@ export type Database = {
           avatar_url?: string | null;
           organization_id?: string;
           role?: Database['public']['Enums']['user_role'];
+          first_login_completed?: boolean;
           created_at?: string;
           updated_at?: string;
         };

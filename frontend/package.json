@@ -1,5 +1,5 @@
 {
-  "name": "frontend",
+  "name": "chip-mvp-frontend",
   "version": "0.1.0",
   "private": true,
   "scripts": {
@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
+    "@supabase/ssr": "^0.7.0",
     "@supabase/supabase-js": "^2.74.0",
     "axios": "^1.12.2",
     "fluent-ffmpeg": "^2.1.3",

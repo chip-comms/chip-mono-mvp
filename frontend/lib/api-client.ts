@@ -41,8 +41,12 @@ export class MeetingAssistantAPI {
       const { data: jobData, error: jobError } = await supabase
         .from('processing_jobs')
         .insert({
-          video_url: uploadData.path,
+          storage_path: uploadData.path,
+          original_filename: file.name,
           status: 'pending',
+          file_size_mb: Number((file.size / (1024 * 1024)).toFixed(2)),
+          user_id: 'temp-user-id', // This will be replaced once auth is implemented
+          organization_id: 'temp-org-id', // This will be replaced once auth is implemented
         })
         .select()
         .single();
@@ -126,19 +130,35 @@ export class MeetingAssistantAPI {
       return (data || []).map(
         (job: {
           id: string;
-          video_url: string;
-          status: string;
+          storage_path: string | null;
+          original_filename: string | null;
+          status:
+            | 'uploading'
+            | 'pending'
+            | 'processing'
+            | 'completed'
+            | 'failed';
           created_at: string;
-          processing_error?: string;
+          processing_error: string | null;
+          file_size_mb: number | null;
+          python_job_id: string | null;
+          user_id: string;
+          organization_id: string;
+          duration_seconds: number | null;
+          delete_after: string | null;
+          updated_at: string;
         }): Recording => ({
           id: job.id,
-          title: job.video_url.split('/').pop() || 'Unknown Recording',
-          filename: job.video_url,
+          title:
+            job.original_filename ||
+            job.storage_path?.split('/').pop() ||
+            'Unknown Recording',
+          filename: job.storage_path || '',
           fileType: 'video/mp4', // Default for now
-          fileSizeBytes: 0, // Not stored yet
+          fileSizeBytes: job.file_size_mb ? job.file_size_mb * 1024 * 1024 : 0,
           status: job.status as Recording['status'],
           createdAt: job.created_at,
-          processingError: job.processing_error,
+          processingError: job.processing_error || undefined,
         })
       );
     } catch (error: unknown) {
@@ -165,7 +185,7 @@ export class MeetingAssistantAPI {
       return {
         success: true,
         status: data.status as Recording['status'],
-        error: data.processing_error,
+        error: data.processing_error || undefined,
       };
     } catch (error: unknown) {
       console.error('Failed to fetch processing status:', error);
@@ -199,16 +219,29 @@ export class MeetingAssistantAPI {
       }
 
       // Transform Supabase data to Intelligence format
+      const transcript =
+        typeof data.transcript === 'object' &&
+        data.transcript &&
+        'text' in data.transcript
+          ? (data.transcript as any).text
+          : '';
+
       return {
         recordingId: data.job_id,
-        transcript: data.transcript?.text || '',
+        transcript: transcript || '',
         summary: data.summary || '',
-        actionItems: data.action_items || [],
-        keyTopics: data.key_topics || [],
-        sentiment: data.sentiment || { overall: 'neutral', score: 0 },
-        speakerStats: data.speaker_stats || [],
-        communicationMetrics: data.communication_metrics || {},
-        insights: data.summary, // Use summary as insights for now
+        actionItems: [], // Not implemented yet
+        keyTopics: [], // Not implemented yet
+        sentiment: { overall: 'neutral', score: 0 }, // Not implemented yet
+        speakerStats: Array.isArray(data.speaker_stats)
+          ? (data.speaker_stats as any[])
+          : [],
+        communicationMetrics:
+          typeof data.communication_metrics === 'object' &&
+          data.communication_metrics
+            ? (data.communication_metrics as any)
+            : {},
+        insights: data.summary || undefined, // Use summary as insights for now
       };
     } catch (error: unknown) {
       console.error('Failed to fetch intelligence:', error);
@@ -234,10 +267,10 @@ export class MeetingAssistantAPI {
    */
   static async deleteRecording(recordingId: string): Promise<boolean> {
     try {
-      // First get the recording to find the video URL
+      // First get the recording to find the storage path
       const { data: job, error: fetchError } = await supabase
         .from('processing_jobs')
-        .select('video_url')
+        .select('storage_path')
         .eq('id', recordingId)
         .single();
 
@@ -252,10 +285,10 @@ export class MeetingAssistantAPI {
       if (deleteError) throw deleteError;
 
       // Delete from storage
-      if (job?.video_url) {
+      if (job?.storage_path) {
         const { error: storageError } = await supabase.storage
           .from('meeting-recordings')
-          .remove([job.video_url]);
+          .remove([job.storage_path]);
 
         if (storageError) {
           console.warn('Storage deletion failed:', storageError);
