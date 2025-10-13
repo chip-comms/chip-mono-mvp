@@ -49,6 +49,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
   const fetchUserData = async (session: Session) => {
     try {
+      // Skip API calls during build time or if Supabase is not properly configured
+      if (
+        typeof window === 'undefined' ||
+        !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+        process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
+      ) {
+        return;
+      }
+
       const response = await fetch('/api/auth/check-setup', {
         headers: {
           Authorization: `Bearer ${session.access_token}`,
@@ -83,6 +92,15 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   const refreshAuth = async () => {
+    // Skip during build time or if Supabase is not properly configured
+    if (
+      typeof window === 'undefined' ||
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
+    ) {
+      return;
+    }
+
     const {
       data: { session },
     } = await supabase.auth.getSession();
@@ -104,6 +122,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
   };
 
   useEffect(() => {
+    // Skip during build time or if Supabase is not properly configured
+    if (
+      typeof window === 'undefined' ||
+      !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+      process.env.NEXT_PUBLIC_SUPABASE_URL.includes('placeholder')
+    ) {
+      setLoading(false);
+      return;
+    }
+
     // Get initial session
     const getInitialSession = async () => {
       const {
