@@ -1,25 +1,6 @@
 export default function DashboardPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
-          <div className="flex justify-between items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-            <div className="flex gap-4">
-              <button className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                Profile
-              </button>
-              <button className="px-4 py-2 text-gray-700 hover:bg-gray-100 rounded-lg transition">
-                Sign Out
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -66,7 +47,6 @@ export default function DashboardPage() {
             <p className="text-sm">Upload your first meeting to get started</p>
           </div>
         </div>
-      </main>
-    </div>
+      </div>
   );
 }
