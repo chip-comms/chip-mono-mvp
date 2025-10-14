@@ -14,176 +14,39 @@ export type Database = {
   };
   public: {
     Tables: {
-      organizations: {
-        Row: {
-          id: string;
-          name: string;
-          slug: string;
-          settings: Json | null;
-          storage_quota_mb: number;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          name: string;
-          slug: string;
-          settings?: Json | null;
-          storage_quota_mb?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          name?: string;
-          slug?: string;
-          settings?: Json | null;
-          storage_quota_mb?: number;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [];
-      };
-      users: {
-        Row: {
-          id: string;
-          email: string;
-          full_name: string | null;
-          avatar_url: string | null;
-          organization_id: string;
-          role: Database['public']['Enums']['user_role'];
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id: string;
-          email: string;
-          full_name?: string | null;
-          avatar_url?: string | null;
-          organization_id: string;
-          role?: Database['public']['Enums']['user_role'];
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          email?: string;
-          full_name?: string | null;
-          avatar_url?: string | null;
-          organization_id?: string;
-          role?: Database['public']['Enums']['user_role'];
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'users_organization_id_fkey';
-            columns: ['organization_id'];
-            isOneToOne: false;
-            referencedRelation: 'organizations';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
-      processing_jobs: {
-        Row: {
-          id: string;
-          storage_path: string | null;
-          original_filename: string | null;
-          status: Database['public']['Enums']['job_status'];
-          processing_error: string | null;
-          python_job_id: string | null;
-          user_id: string;
-          organization_id: string;
-          file_size_mb: number | null;
-          duration_seconds: number | null;
-          delete_after: string | null;
-          created_at: string;
-          updated_at: string;
-        };
-        Insert: {
-          id?: string;
-          storage_path?: string | null;
-          original_filename?: string | null;
-          status?: Database['public']['Enums']['job_status'];
-          processing_error?: string | null;
-          python_job_id?: string | null;
-          user_id: string;
-          organization_id: string;
-          file_size_mb?: number | null;
-          duration_seconds?: number | null;
-          delete_after?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Update: {
-          id?: string;
-          storage_path?: string | null;
-          original_filename?: string | null;
-          status?: Database['public']['Enums']['job_status'];
-          processing_error?: string | null;
-          python_job_id?: string | null;
-          user_id?: string;
-          organization_id?: string;
-          file_size_mb?: number | null;
-          duration_seconds?: number | null;
-          delete_after?: string | null;
-          created_at?: string;
-          updated_at?: string;
-        };
-        Relationships: [
-          {
-            foreignKeyName: 'processing_jobs_user_id_fkey';
-            columns: ['user_id'];
-            isOneToOne: false;
-            referencedRelation: 'users';
-            referencedColumns: ['id'];
-          },
-          {
-            foreignKeyName: 'processing_jobs_organization_id_fkey';
-            columns: ['organization_id'];
-            isOneToOne: false;
-            referencedRelation: 'organizations';
-            referencedColumns: ['id'];
-          },
-        ];
-      };
       meeting_analysis: {
         Row: {
+          behavioral_insights: Json | null;
+          communication_metrics: Json | null;
+          created_at: string | null;
           id: string;
           job_id: string;
-          user_id: string;
-          organization_id: string;
+          speaker_stats: Json | null;
           summary: string | null;
           transcript: Json | null;
-          speaker_stats: Json | null;
-          communication_metrics: Json | null;
-          behavioral_insights: Json | null;
-          created_at: string;
+          user_id: string;
         };
         Insert: {
+          behavioral_insights?: Json | null;
+          communication_metrics?: Json | null;
+          created_at?: string | null;
           id?: string;
           job_id: string;
-          user_id: string;
-          organization_id: string;
+          speaker_stats?: Json | null;
           summary?: string | null;
           transcript?: Json | null;
-          speaker_stats?: Json | null;
-          communication_metrics?: Json | null;
-          behavioral_insights?: Json | null;
-          created_at?: string;
+          user_id: string;
         };
         Update: {
+          behavioral_insights?: Json | null;
+          communication_metrics?: Json | null;
+          created_at?: string | null;
           id?: string;
           job_id?: string;
-          user_id?: string;
-          organization_id?: string;
+          speaker_stats?: Json | null;
           summary?: string | null;
           transcript?: Json | null;
-          speaker_stats?: Json | null;
-          communication_metrics?: Json | null;
-          behavioral_insights?: Json | null;
-          created_at?: string;
+          user_id?: string;
         };
         Relationships: [
           {
@@ -200,14 +63,93 @@ export type Database = {
             referencedRelation: 'users';
             referencedColumns: ['id'];
           },
+        ];
+      };
+      processing_jobs: {
+        Row: {
+          created_at: string | null;
+          delete_after: string | null;
+          duration_seconds: number | null;
+          file_size_mb: number | null;
+          id: string;
+          original_filename: string | null;
+          processing_error: string | null;
+          python_job_id: string | null;
+          status: Database['public']['Enums']['job_status'];
+          storage_path: string | null;
+          updated_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string | null;
+          delete_after?: string | null;
+          duration_seconds?: number | null;
+          file_size_mb?: number | null;
+          id?: string;
+          original_filename?: string | null;
+          processing_error?: string | null;
+          python_job_id?: string | null;
+          status?: Database['public']['Enums']['job_status'];
+          storage_path?: string | null;
+          updated_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string | null;
+          delete_after?: string | null;
+          duration_seconds?: number | null;
+          file_size_mb?: number | null;
+          id?: string;
+          original_filename?: string | null;
+          processing_error?: string | null;
+          python_job_id?: string | null;
+          status?: Database['public']['Enums']['job_status'];
+          storage_path?: string | null;
+          updated_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
           {
-            foreignKeyName: 'meeting_analysis_organization_id_fkey';
-            columns: ['organization_id'];
+            foreignKeyName: 'processing_jobs_user_id_fkey';
+            columns: ['user_id'];
             isOneToOne: false;
-            referencedRelation: 'organizations';
+            referencedRelation: 'users';
             referencedColumns: ['id'];
           },
         ];
+      };
+      users: {
+        Row: {
+          avatar_url: string | null;
+          created_at: string | null;
+          email: string;
+          first_login_completed: boolean;
+          full_name: string | null;
+          id: string;
+          updated_at: string | null;
+          username: string | null;
+        };
+        Insert: {
+          avatar_url?: string | null;
+          created_at?: string | null;
+          email: string;
+          first_login_completed?: boolean;
+          full_name?: string | null;
+          id: string;
+          updated_at?: string | null;
+          username?: string | null;
+        };
+        Update: {
+          avatar_url?: string | null;
+          created_at?: string | null;
+          email?: string;
+          first_login_completed?: boolean;
+          full_name?: string | null;
+          id?: string;
+          updated_at?: string | null;
+          username?: string | null;
+        };
+        Relationships: [];
       };
     };
     Views: {
@@ -217,7 +159,6 @@ export type Database = {
       [_ in never]: never;
     };
     Enums: {
-      user_role: 'owner' | 'admin' | 'member' | 'viewer';
       job_status:
         | 'uploading'
         | 'pending'
@@ -353,6 +294,8 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      job_status: ['uploading', 'pending', 'processing', 'completed', 'failed'],
+    },
   },
 } as const;

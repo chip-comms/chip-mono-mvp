@@ -11,28 +11,19 @@
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,css,md}\""
   },
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "@supabase/supabase-js": "^2.74.0",
-    "axios": "^1.12.2",
-    "fluent-ffmpeg": "^2.1.3",
-    "formidable": "^3.5.4",
-    "lucide-react": "^0.545.0",
+    "@supabase/ssr": "^0.7.0",
+    "@supabase/supabase-js": "^2.75.0",
     "next": "15.5.4",
-    "openai": "^6.2.0",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "react-dropzone": "^14.3.8",
-    "uuid": "^13.0.0"
+    "server-only": "^0.0.1"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@tailwindcss/postcss": "^4",
-    "@types/fluent-ffmpeg": "^2.1.27",
-    "@types/formidable": "^3.4.5",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "@types/uuid": "^10.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "prettier": "^3.0.0",
