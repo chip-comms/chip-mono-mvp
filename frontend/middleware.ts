@@ -40,7 +40,8 @@ export async function middleware(request: NextRequest) {
   const isPublicRoute = pathname === '/' || pathname.startsWith('/_next');
 
   // Auth routes (login, signup)
-  const isAuthRoute = pathname === '/platform/login' || pathname === '/platform/signup';
+  const isAuthRoute =
+    pathname === '/platform/login' || pathname === '/platform/signup';
 
   // Protected platform routes
   const isProtectedRoute = pathname.startsWith('/platform') && !isAuthRoute;

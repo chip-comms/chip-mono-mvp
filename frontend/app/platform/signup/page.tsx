@@ -49,7 +49,9 @@ export default function SignupPage() {
           router.refresh();
         } else {
           // No session - email confirmation required
-          setError('Please check your email to confirm your account before logging in');
+          setError(
+            'Please check your email to confirm your account before logging in'
+          );
           setLoading(false);
         }
       }

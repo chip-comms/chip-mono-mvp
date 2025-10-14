@@ -44,7 +44,6 @@ export interface ProcessingJob {
   updated_at: string;
 }
 
-
 // ============================================================================
 // Transcript Types
 // ============================================================================
@@ -188,8 +187,6 @@ export interface MeetingAnalysis {
   behavioral_insights?: BehavioralInsights;
   created_at: string;
 }
-
-
 
 // ============================================================================
 // Storage Adapter Interface
