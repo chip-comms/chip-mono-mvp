@@ -266,7 +266,7 @@ gcloud run deploy meeting-intelligence-backend \
   --timeout 300s \
   --min-instances 0 \
   --max-instances 10 \
-  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest" \
+  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest,API_KEY=python-backend-api-key:latest" \
   --set-env-vars "AI_PROVIDER=gemini" \
   --quiet
 

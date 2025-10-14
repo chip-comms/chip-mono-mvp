@@ -87,13 +87,15 @@ serve(async (req) => {
     console.log(`[process-meeting] Calling Python backend: ${pythonUrl}`);
 
     // Call Python backend for transcription and analysis
+    const pythonApiKey = Deno.env.get('PYTHON_BACKEND_API_KEY');
+    console.log(`[process-meeting] API key length: ${pythonApiKey?.length}, first 10 chars: ${pythonApiKey?.substring(0, 10)}`);
     const response = await fetch(`${pythonUrl}/api/process`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         // Add API key if configured
-        ...(Deno.env.get('PYTHON_BACKEND_API_KEY') && {
-          'X-API-Key': Deno.env.get('PYTHON_BACKEND_API_KEY'),
+        ...(pythonApiKey && {
+          'Authorization': `Bearer ${pythonApiKey}`,
         }),
       },
       body: JSON.stringify({

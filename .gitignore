@@ -41,6 +41,9 @@ python-backend/__pycache__/
 recording-samples/
 frontend/storage/uploads
 
+# Supabase CLI temporary files
+supabase/.temp/
+
 # TypeScript
 *.tsbuildinfo
 frontend/next-env.d.ts

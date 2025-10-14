@@ -14,11 +14,11 @@ case "${1:-help}" in
   "pull")
     echo "⬇️  Pulling current schema from remote database..."
     echo "Note: Docker Desktop must be running for this command"
-    cd supabase-backend && supabase db pull -p "zhv!YWC8zuq@qkj3vru"
+    cd supabase && supabase db pull --db-url "postgresql://postgres:zhv%21YWC8zuq%40qkj3vru@db.kfikvadshmptpwscgbyu.supabase.co:5432/postgres"
     echo "✅ Schema pulled successfully!"
-    echo "Check supabase-backend/migrations/ for the generated files."
+    echo "Check supabase/migrations/ for the generated files."
     ;;
-    
+
   "diff")
     if [ -z "$2" ]; then
       echo "❌ Please provide a migration name"
@@ -26,13 +26,13 @@ case "${1:-help}" in
       exit 1
     fi
     echo "📝 Creating migration diff: $2"
-    cd supabase-backend && supabase db diff --file "$2"
-    echo "✅ Migration file created in supabase-backend/migrations/"
+    cd supabase && supabase db diff --file "$2"
+    echo "✅ Migration file created in supabase/migrations/"
     ;;
-    
+
   "push")
     echo "⬆️  Pushing migrations to remote database..."
-    cd supabase-backend && supabase db push -p "zhv!YWC8zuq@qkj3vru"
+    cd supabase && supabase db push --db-url "postgresql://postgres:zhv%21YWC8zuq%40qkj3vru@db.kfikvadshmptpwscgbyu.supabase.co:5432/postgres"
     echo "✅ Migrations pushed successfully!"
     ;;
     
@@ -41,37 +41,37 @@ case "${1:-help}" in
     read -p "Are you sure? (y/N): " -n 1 -r
     echo
     if [[ $REPLY =~ ^[Yy]$ ]]; then
-      cd supabase-backend && supabase db reset
+      cd supabase && supabase db reset
       echo "✅ Database reset complete!"
     else
       echo "Cancelled."
     fi
     ;;
-    
+
   "status")
     echo "📊 Checking database status..."
-    cd supabase-backend && supabase status
+    cd supabase && supabase status
     ;;
-    
+
   "start")
     echo "🚀 Starting local Supabase services..."
-    cd supabase-backend && supabase start
+    cd supabase && supabase start
     echo "✅ Local services started!"
     echo "Studio: http://localhost:54323"
     ;;
-    
+
   "stop")
     echo "🛑 Stopping local Supabase services..."
-    cd supabase-backend && supabase stop
+    cd supabase && supabase stop
     echo "✅ Local services stopped!"
     ;;
-    
+
   "generate-types")
     echo "🏗️  Generating TypeScript types..."
-    supabase gen types typescript --project-id=$PROJECT_ID > supabase-backend/database.types.ts
-    echo "✅ Types generated in supabase-backend/database.types.ts"
+    supabase gen types typescript --project-id=$PROJECT_ID > supabase/database.types.ts
+    echo "✅ Types generated in supabase/database.types.ts"
     ;;
-    
+
   "connect")
     echo "🔗 Database connection info:"
     echo "Project ID: $PROJECT_ID"
@@ -83,7 +83,7 @@ case "${1:-help}" in
     echo "Connection string:"
     echo "postgresql://postgres.$PROJECT_ID:zhv%21YWC8zuq%40qkj3vru@aws-1-us-east-1.pooler.supabase.com:5432/postgres"
     ;;
-    
+
   "migration")
     if [ -z "$2" ]; then
       echo "❌ Please provide a migration name"
@@ -92,8 +92,8 @@ case "${1:-help}" in
     fi
     TIMESTAMP=$(date +%Y%m%d%H%M%S)
     FILENAME="$TIMESTAMP_$2.sql"
-    touch "supabase-backend/migrations/$FILENAME"
-    echo "📝 Created new migration file: supabase-backend/migrations/$FILENAME"
+    touch "supabase/migrations/$FILENAME"
+    echo "📝 Created new migration file: supabase/migrations/$FILENAME"
     echo ""
     echo "Add your SQL changes to this file, then run:"
     echo "./db-ops.sh push"

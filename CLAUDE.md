@@ -85,35 +85,36 @@ This project separates concerns across three layers:
 
 1. **Frontend (Next.js)** - UI and user interactions
    - Location: `frontend/`
-   - API routes: `frontend/app/api/` (to be implemented)
-   - Communicates with Python backend and Supabase
+   - Handles: File uploads to Supabase Storage, UI interactions
+   - Communicates directly with Supabase (Storage and Database)
 
-2. **Python Backend (FastAPI)** - CPU/GPU-intensive processing
+2. **Supabase Edge Functions** - Middleware layer
+   - Location: `supabase/functions/`
+   - Handles: Orchestrating processing workflows, generating signed URLs
+   - Automatically triggered by database triggers (using pg_net extension)
+   - Secured with Supabase anon key
+
+3. **Python Backend (FastAPI)** - CPU/GPU-intensive processing
    - Location: `python-backend/`
-   - Handles: Video/audio extraction, transcription (WhisperX), speaker diarization (pyannote.audio)
-   - Exposes REST API at `http://localhost:8000`
-
-3. **Business Logic Layer** - AI analysis and data management
-   - Location: `supabase-backend/lib/`
-   - Portable TypeScript modules imported by frontend and Edge Functions
-   - Handles: AI provider management, meeting analysis, metrics calculation
+   - Deployed to: Google Cloud Run (serverless containers)
+   - Handles: Video/audio extraction, transcription (WhisperX), speaker diarization (pyannote.audio), AI analysis
+   - Secured with API key authentication (only Edge Functions can call it)
+   - Exposes REST API at Cloud Run URL
 
 ```
-supabase-backend/lib/
-├── ai/                      # AI provider adapters (OpenAI, Gemini, Anthropic)
-│   ├── ai-adapter.ts        # Multi-provider adapter with auto-selection
-│   ├── providers/           # Individual AI provider implementations
-│   ├── analysis.ts          # Meeting analysis logic
-│   └── metrics.ts           # Communication metrics calculation
-├── data/
-│   └── supabase.ts          # Supabase database adapter
-├── storage/
-│   └── supabase.ts          # Supabase Storage adapter
-├── types.ts                 # Shared TypeScript types
-└── config.ts                # Configuration management
+supabase/
+├── functions/               # Supabase Edge Functions (Deno)
+│   └── process-meeting/     # Orchestrates processing workflow
+├── migrations/              # Database schema migrations
+└── database.types.ts        # Generated TypeScript types from database
 ```
 
-**Key Principle:** The Python backend handles heavy lifting (transcription), while TypeScript handles AI analysis and business logic. All data and storage operations use Supabase directly.
+**Key Principle:**
+- Frontend uploads files directly to Supabase Storage
+- Database trigger automatically calls Edge Function when job is created
+- Edge Function generates signed URL and calls Python backend
+- Python backend handles transcription and AI analysis, saves results to database
+- All communication secured with API keys and RLS policies
 
 ### Database Schema
 
@@ -142,24 +143,32 @@ The database follows a simple single-tenant architecture:
 
 ### Data Flow
 
-1. **Upload Flow (to be implemented):**
-   - Frontend → Next.js API route → Supabase Storage
+1. **Upload Flow:**
+   - Frontend uploads file directly to Supabase Storage
    - Creates `processing_job` with `status: 'uploading'`
    - File saved to Supabase Storage at `recordings/{user_id}/{year}/{month}/{job_id}.mp4`
    - Status updated to `pending`
+   - Database trigger automatically fires
 
-2. **Processing Flow (to be implemented):**
-   - Frontend triggers processing → Python FastAPI backend
-   - **Step 1:** Python backend extracts audio and performs transcription
-     - Uses WhisperX for transcription with word-level timestamps
-     - Uses pyannote.audio for speaker diarization
-     - Returns transcript with speaker labels and timestamps
-   - **Step 2:** Frontend/Backend invokes `supabase-backend/lib/ai/` for AI analysis
-     - Generates summary, action items, key topics using AI provider
-     - Calculates communication metrics (talk time, interruptions, response delays)
-     - Analyzes company values alignment
-     - Generates AI insights
-   - **Step 3:** Results saved to `meeting_analysis` table
+2. **Automatic Processing Trigger:**
+   - Database trigger (`on_processing_job_created`) detects new `pending` job
+   - Uses `pg_net` extension to make HTTP POST to Edge Function
+   - Edge Function receives job ID and fetches job details
+
+3. **Processing Flow:**
+   - **Step 1:** Edge Function generates signed URL (2-hour expiry) for the uploaded file
+   - **Step 2:** Edge Function updates job status to `processing`
+   - **Step 3:** Edge Function calls Python backend with:
+     - Job ID, user ID, signed URL, filename
+     - Authentication via `Authorization: Bearer <api_key>` header
+   - **Step 4:** Python backend (Cloud Run) processes in background:
+     - Downloads file from signed URL
+     - Extracts audio and performs transcription (WhisperX)
+     - Performs speaker diarization (pyannote.audio)
+     - Generates AI analysis (summary, insights, metrics) using Gemini
+     - Calculates speaker statistics
+     - Saves all results to `meeting_analysis` table
+     - Updates job status to `completed` or `failed`
 
 3. **Analysis Components:**
    - Summary (AI-generated overview)
@@ -169,25 +178,49 @@ The database follows a simple single-tenant architecture:
    - Company values alignment (configurable values with per-value scores and examples)
    - Behavioral insights (face detection, prosody analysis, gesture analysis - optional)
 
-### AI Provider Adapter Pattern
+### Python Backend Deployment
 
-The `AIAdapter` class (`supabase-backend/lib/ai/ai-adapter.ts`) provides a unified interface for multiple AI providers:
+The Python backend is deployed to Google Cloud Run with the following setup:
 
-- **Auto-Selection:** Automatically selects the first available provider based on API key configuration
-- **Provider Priority:** Checks providers in order (Gemini, OpenAI, Anthropic)
-- **Manual Override:** Can specify preferred provider via `config.aiProvider`
-- **Graceful Fallback:** Falls back to next available provider if preferred provider fails
+**Deployment Script:** `python-backend/deploy.sh`
+- Builds Docker container using Cloud Build
+- Pushes to Artifact Registry
+- Deploys to Cloud Run with environment configuration
+- Configures secrets from Google Secret Manager
 
-When adding new AI providers:
+**Secrets (Google Secret Manager):**
+- `supabase-url` - Supabase project URL
+- `supabase-service-role-key` - Supabase service role key (for database writes)
+- `gemini-api-key` - Google Gemini API key for AI analysis
+- `python-backend-api-key` - API key for authenticating Edge Function requests
 
-1. Create a new provider class in `supabase-backend/lib/ai/providers/` implementing the `AIProvider` interface
-2. Add initialization logic to `AIAdapter.initializeProviders()`
-3. Configure API key in environment variables
+**Security:**
+- API key authentication via `APIKeyMiddleware` (python-backend/app/middleware/auth.py)
+- Only Edge Functions have the API key to call Python backend
+- Service is `--allow-unauthenticated` but protected by API key check
+- Health endpoint (`/api/health`) excluded from authentication
+
+**Resource Configuration:**
+- Memory: 2Gi
+- CPU: 2
+- Timeout: 300s (5 minutes)
+- Min instances: 0 (scales to zero)
+- Max instances: 10
+
+**Deployment Commands:**
+```bash
+cd python-backend
+./deploy.sh  # Full deployment with interactive prompts
+
+# Manual deployment (after build)
+gcloud run deploy meeting-intelligence-backend \
+  --image <image-url> \
+  --region us-central1
+```
 
 ## Frontend Structure
 
 - **App Router:** Uses Next.js 15 App Router (`frontend/app/`)
-- **API Routes:** `frontend/app/api/` (currently empty - to be implemented)
 - **Authentication:** Supabase Auth with middleware (`frontend/middleware.ts`)
 - **UI Components:** Shared components in `frontend/components/`
 - **Client Libraries:**
@@ -195,6 +228,8 @@ When adding new AI providers:
   - `frontend/lib/supabase-server.ts` - Server Supabase client (SSR)
   - `frontend/lib/auth.ts` - Client-side auth utilities
   - `frontend/lib/auth-server.ts` - Server-side auth utilities
+
+**Note:** The frontend communicates directly with Supabase (no Next.js API routes needed). All processing is handled by Edge Functions and Python backend.
 
 ### Authentication System
 
@@ -233,15 +268,13 @@ When adding new AI providers:
 
 ## Python Backend Structure
 
-**Purpose:** Handles CPU/GPU-intensive video/audio processing that's better suited for Python than TypeScript.
+**Purpose:** Handles CPU/GPU-intensive video/audio processing that's better suited for Python than TypeScript. Deployed to Google Cloud Run.
 
 - **Entry Point:** `python-backend/app/main.py`
 - **API Routes:**
-  - `GET /api/health` - Health check
-  - `POST /api/video/*` - Video processing operations (frame extraction, etc.)
-  - `POST /api/audio/transcribe` - Audio transcription with WhisperX
-  - `GET /api/audio/languages` - List supported languages
-  - `POST /api/*` - Analysis endpoints
+  - `GET /api/health` - Health check (no authentication required)
+  - `POST /api/process` - Main processing endpoint (called by Edge Functions)
+  - `GET /api/process/status/{job_id}` - Get job status
 - **Key Dependencies:** (see `python-backend/requirements.txt`)
   - `whisperx>=3.1.0` - Advanced speech transcription with word-level timestamps
   - `pyannote.audio>=3.0.0` - Speaker diarization (who spoke when)
@@ -249,13 +282,23 @@ When adding new AI providers:
   - `ffmpeg-python>=0.2.0` - Video/audio processing
   - `opencv-python>=4.9.0` - Video analysis
   - `fastapi>=0.109.0` - REST API framework
+  - `google-generativeai>=0.3.0` - Google Gemini API
 
-**Transcription Flow:**
+**Processing Flow (Background Task):**
 
-1. Upload audio file to `/api/audio/transcribe`
-2. WhisperX performs transcription with word timestamps
-3. pyannote.audio performs speaker diarization
-4. Returns JSON with segments, speakers, timestamps, and full transcript
+1. Edge Function calls `/api/process` with job details and signed URL
+2. Python backend starts background task and returns immediately
+3. Background task:
+   - Downloads file from Supabase Storage (via signed URL)
+   - Extracts audio and performs transcription (WhisperX)
+   - Performs speaker diarization (pyannote.audio)
+   - Generates AI analysis using Gemini (summary, topics, action items, effectiveness score)
+   - Calculates speaker statistics (talk time, word count, percentages)
+   - Saves results to `meeting_analysis` table
+   - Updates job status to `completed` or `failed`
+   - Cleans up temporary files
+
+**Note:** The build process takes 8-10 minutes due to large ML dependencies (~2GB for PyTorch, WhisperX, etc.). Consider using Docker layer caching or pre-built base images for faster iteration.
 
 ## Environment Setup
 
@@ -267,33 +310,58 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
 NODE_ENV=development
 ```
 
-### Python Backend (`python-backend/.env`)
+### Python Backend (Local Development: `python-backend/.env`)
 
 ```bash
 SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_SECRET_KEY=your_service_role_key
 GEMINI_API_KEY=your_gemini_key
-# Optional: OPENAI_API_KEY=sk-your-key-here
-AI_PROVIDER=gemini  # or 'openai', 'anthropic', 'auto'
-PORT=8000
+AI_PROVIDER=gemini
 CORS_ORIGINS=http://localhost:3000
+API_KEY=your_local_api_key  # Optional for local dev
+```
+
+### Python Backend (Cloud Run Deployment: `python-backend/.env.deploy`)
+
+```bash
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SECRET_KEY=your_service_role_key
+GEMINI_API_KEY=your_gemini_key
+API_KEY=your_production_api_key
+```
+
+**Note:** Cloud Run deployment uses Google Secret Manager. Secrets are configured via `deploy.sh` script and injected as environment variables at runtime.
+
+### Supabase Edge Functions
+
+Edge Functions require the following secrets (configured via Supabase dashboard):
+
+```bash
+PYTHON_BACKEND_URL=https://your-cloud-run-url
+PYTHON_BACKEND_API_KEY=your_production_api_key
 ```
 
 ## Key Conventions
 
 ### Type Definitions
 
-- All shared types are defined in `supabase-backend/lib/types.ts`
-- Use generated database types from `supabase-backend/database.types.ts` (regenerate with `./db-ops.sh generate-types`)
+- Use generated database types from `supabase/database.types.ts` (regenerate with `./db-ops.sh generate-types`)
 - New database types must match the Postgres schema exactly
 
 ### Migration Workflow
 
-1. Make schema changes locally or write SQL migration
-2. Run `./db-ops.sh diff migration_name` to generate migration file
-3. Review migration in `supabase-backend/migrations/`
-4. Run `./db-ops.sh push` to apply to remote database
-5. Run `./db-ops.sh generate-types` to update TypeScript types
+1. Make schema changes locally or write SQL migration file
+2. Create migration: `./db-ops.sh migration add_feature_name`
+3. Write SQL in generated migration file: `supabase/migrations/TIMESTAMP_add_feature_name.sql`
+4. Review migration carefully
+5. Run `./db-ops.sh push` to apply to remote database
+6. Run `./db-ops.sh generate-types` to update TypeScript types
+
+**Important:**
+- NEVER run manual SQL statements in Supabase SQL Editor - always use migrations
+- Keep migration history in sync between local and remote
+- Use `supabase migration repair` if history gets out of sync
+- Test migrations locally with `./db-ops.sh reset` before pushing
 
 ### Data Access Patterns
 
@@ -303,17 +371,18 @@ CORS_ORIGINS=http://localhost:3000
 
 ### Code Style
 
-- Use ESLint for TypeScript/JavaScript (configuration in `frontend/` and `supabase-backend/`)
+- Use ESLint for TypeScript/JavaScript (configuration in `frontend/` and `supabase/`)
 - Use Prettier for all formatting (shared configuration at root)
 - Use type imports: `import type { Type } from './module'`
 - Prefer async/await over promises
+- Python: Follow PEP 8 style guide, use flake8 for linting
 
 ## CI/CD
 
 GitHub Actions runs on PRs to `main` and `develop`:
 
 - **Frontend:** Formatting check, linting, and build verification (`frontend-lint-pr.yml`)
-- **Supabase Backend:** Formatting check and linting (`supabase-backend-lint-pr.yml`)
+- **Supabase:** Formatting check and linting (`supabase-backend-lint-pr.yml`)
 - **Python Backend:** Linting with flake8 (`python-backend-lint-pr.yml`)
 
 All checks must pass before merging. Run quality checks locally before pushing:
@@ -321,3 +390,57 @@ All checks must pass before merging. Run quality checks locally before pushing:
 ```bash
 npm run lint && npm run format:check && npm run build:frontend
 ```
+
+## Deployment
+
+### Python Backend Deployment
+
+The Python backend is deployed to Google Cloud Run:
+
+1. **Prerequisites:**
+   - Google Cloud account with billing enabled
+   - gcloud CLI installed and authenticated
+   - Docker Desktop running (for builds)
+   - Create `.env.deploy` file from `.env.deploy.example`
+
+2. **First-time Setup:**
+   ```bash
+   cd python-backend
+   ./deploy.sh
+   ```
+   This will:
+   - Enable required GCP APIs
+   - Create Artifact Registry repository
+   - Create secrets in Google Secret Manager
+   - Build container (~8-10 minutes)
+   - Deploy to Cloud Run
+
+3. **Subsequent Deployments:**
+   ```bash
+   cd python-backend
+   ./deploy.sh  # Full rebuild and deploy
+
+   # Or just deploy existing image
+   gcloud run deploy meeting-intelligence-backend \
+     --image <image-url> \
+     --region us-central1
+   ```
+
+4. **After Deployment:**
+   - Copy the service URL
+   - Add `PYTHON_BACKEND_URL` to Supabase Edge Function secrets
+   - Add `PYTHON_BACKEND_API_KEY` to Supabase Edge Function secrets
+
+### Supabase Edge Functions Deployment
+
+```bash
+# Deploy all functions
+supabase functions deploy
+
+# Deploy specific function
+supabase functions deploy process-meeting
+```
+
+### Frontend Deployment
+
+Frontend deployment is typically handled by Vercel or similar platform. See frontend deployment documentation for details.
