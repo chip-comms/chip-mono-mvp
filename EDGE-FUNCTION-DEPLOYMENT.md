@@ -9,6 +9,7 @@ Frontend → Supabase Edge Functions → Python Backend (Cloud Run) → Supabase
 ```
 
 **Why Edge Functions?**
+
 - Secure: Frontend never calls Python backend directly
 - Authentication: Edge Functions handle user auth automatically
 - Proximity: Runs close to Supabase for low latency
@@ -27,6 +28,7 @@ cd python-backend
 ```
 
 After deployment, save the service URL:
+
 ```bash
 SERVICE_URL=$(gcloud run services describe meeting-intelligence-backend \
   --region us-central1 \
@@ -120,7 +122,7 @@ const formData = new FormData();
 formData.append('file', file);
 const uploadResponse = await fetch('/api/upload', {
   method: 'POST',
-  body: formData
+  body: formData,
 });
 const { jobId } = await uploadResponse.json();
 
@@ -131,7 +133,7 @@ await processJob(jobId);
 // 3. Poll status via Edge Function
 const { job } = useJobStatus(jobId, {
   onComplete: (job) => console.log('Done!', job),
-  onError: (job) => console.error('Failed:', job.error)
+  onError: (job) => console.error('Failed:', job.error),
 });
 ```
 
@@ -252,6 +254,7 @@ supabase secrets list
 **Error: "Failed to connect to processing service"**
 
 1. Check Python backend is running:
+
    ```bash
    curl https://your-service.run.app/api/health
    ```

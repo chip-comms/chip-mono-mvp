@@ -89,6 +89,7 @@ npm run dev
 ## Troubleshooting
 
 ### View logs
+
 ```bash
 # Edge Functions
 supabase functions logs process-meeting --follow
@@ -99,11 +100,13 @@ gcloud run services logs read meeting-intelligence-backend \
 ```
 
 ### Check secrets
+
 ```bash
 supabase secrets list
 ```
 
 ### Update secrets
+
 ```bash
 supabase secrets set PYTHON_BACKEND_URL=new-url
 supabase secrets set PYTHON_BACKEND_API_KEY=new-key

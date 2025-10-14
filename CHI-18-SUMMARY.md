@@ -11,12 +11,14 @@ All code, documentation, and deployment scripts have been created. Ready for dep
 ### 1. Docker & Cloud Run Configuration ✅
 
 **Files Created/Modified:**
+
 - `python-backend/Dockerfile` - Optimized for Cloud Run (PORT 8080, dynamic port support)
 - `python-backend/.dockerignore` - Optimized build context
 - `python-backend/cloud-run.yaml` - Service configuration with resource limits
 - `python-backend/deploy.sh` - Interactive deployment script
 
 **Deployment Script Features:**
+
 - Automatic GCP project selection
 - API enablement (Cloud Run, Cloud Build, Secret Manager, Artifact Registry)
 - Artifact Registry repository creation
@@ -30,6 +32,7 @@ All code, documentation, and deployment scripts have been created. Ready for dep
 **File:** `python-backend/app/routes/process.py`
 
 **Features:**
+
 - `POST /api/process` - Accepts job requests from Next.js
 - Background task processing (non-blocking)
 - File download from Supabase signed URLs
@@ -41,6 +44,7 @@ All code, documentation, and deployment scripts have been created. Ready for dep
 - Automatic cleanup of temp files
 
 **Processing Pipeline:**
+
 1. Download file from signed URL
 2. Transcribe audio with WhisperX
 3. Identify speakers with pyannote.audio
@@ -54,10 +58,12 @@ All code, documentation, and deployment scripts have been created. Ready for dep
 **File:** `frontend/app/api/process-job/route.ts`
 
 **Endpoints:**
+
 - `POST /api/process-job` - Triggers Python backend processing
 - `GET /api/process-job?jobId=xxx` - Polls job status
 
 **Features:**
+
 - User authentication validation
 - Job ownership verification
 - Signed URL generation (2 hour expiry)
@@ -67,6 +73,7 @@ All code, documentation, and deployment scripts have been created. Ready for dep
 - Optional API key authentication
 
 **Security:**
+
 - Row Level Security (RLS) enforcement
 - User isolation via `user_id` checks
 - Secure service-to-service communication
@@ -77,10 +84,12 @@ All code, documentation, and deployment scripts have been created. Ready for dep
 **File:** `frontend/lib/use-job-status.ts`
 
 **Hooks:**
+
 - `useJobStatus()` - Polls job status with callbacks
 - `useProcessJob()` - Triggers processing
 
 **Features:**
+
 - Configurable polling interval (default 3s)
 - Automatic stop on terminal states (completed/failed)
 - Callbacks for completion and errors
@@ -88,21 +97,24 @@ All code, documentation, and deployment scripts have been created. Ready for dep
 - TypeScript types included
 
 **Usage Example:**
+
 ```tsx
 const { job, isLoading, error } = useJobStatus(jobId, {
   interval: 3000,
   onComplete: (job) => router.push(`/results/${job.id}`),
-  onError: (job) => toast.error(job.error)
+  onError: (job) => toast.error(job.error),
 });
 ```
 
 ### 5. Environment Configuration ✅
 
 **Updated Files:**
+
 - `frontend/.env.example` - Added Python backend URL and API key
 - `python-backend/.env.example` - Cleaned up and added API_KEY
 
 **New Variables:**
+
 - Frontend: `PYTHON_BACKEND_URL`, `PYTHON_BACKEND_API_KEY`
 - Python: `API_KEY` (for request authentication)
 
@@ -132,6 +144,7 @@ const { job, isLoading, error } = useJobStatus(jobId, {
 ### 7. Main Application Updates ✅
 
 **File:** `python-backend/app/main.py`
+
 - Added `process` router to FastAPI app
 - All routes now available at `/api/process`
 
@@ -172,11 +185,13 @@ chip-mono-mvp/
 ### Prerequisites
 
 1. **Authenticate with GCP:**
+
    ```bash
    gcloud auth login
    ```
 
 2. **Set up environment variables:**
+
    ```bash
    # Frontend
    cp frontend/.env.example frontend/.env.local
@@ -203,6 +218,7 @@ cd python-backend
 ```
 
 The script will:
+
 - Guide you through project selection
 - Enable required APIs
 - Set up Artifact Registry
@@ -217,6 +233,7 @@ Follow the detailed instructions in `python-backend/DEPLOYMENT.md`.
 ### After Deployment
 
 1. **Copy the service URL:**
+
    ```bash
    SERVICE_URL=$(gcloud run services describe meeting-intelligence-backend \
      --region us-central1 \
@@ -225,6 +242,7 @@ Follow the detailed instructions in `python-backend/DEPLOYMENT.md`.
    ```
 
 2. **Update frontend environment:**
+
    ```bash
    # Add to frontend/.env.local
    PYTHON_BACKEND_URL=https://your-service-url.run.app
@@ -286,6 +304,7 @@ Follow the detailed instructions in `python-backend/DEPLOYMENT.md`.
 ### Environment Variables (Cloud Run)
 
 Required:
+
 - `PORT=8080`
 - `SUPABASE_URL` (from secret)
 - `SUPABASE_SERVICE_ROLE_KEY` (from secret)
@@ -294,6 +313,7 @@ Required:
 - `CORS_ORIGINS=https://yourdomain.com,http://localhost:3000`
 
 Optional:
+
 - `API_KEY` (from secret) - For request authentication
 
 ### Secrets (Cloud Secret Manager)
@@ -332,20 +352,24 @@ Optional:
 ### Google Cloud Run
 
 **Free Tier (Monthly):**
+
 - 2 million requests
 - 360,000 GB-seconds
 - 180,000 vCPU-seconds
 
 **After Free Tier:**
+
 - ~$0.024 per GB-second
 - ~$0.40 per million requests
 
 **Estimated Monthly Cost:**
+
 - Light usage (10-50 jobs/day): $5-$15
 - Medium usage (100-500 jobs/day): $15-$50
 - Heavy usage (1000+ jobs/day): $50-$200
 
 **Cost Optimization:**
+
 - `min-instances=0` - Scale to zero when idle
 - `max-instances=10` - Control maximum spend
 - Use smaller instance sizes where possible
@@ -358,11 +382,13 @@ Optional:
 ### Immediate (Required for CHI-18)
 
 1. **Authenticate with GCP:**
+
    ```bash
    gcloud auth login
    ```
 
 2. **Run deployment script:**
+
    ```bash
    cd python-backend
    ./deploy.sh
@@ -449,6 +475,7 @@ gcloud secrets versions access latest --secret=supabase-url
 **CHI-18: Deploy Python Backend to Google Cloud Run with Supabase Integration**
 
 ### Part 1: Google Cloud Run Setup ✅
+
 - [x] Dockerfile created/updated
 - [x] Cloud Run service configuration (cloud-run.yaml)
 - [x] Deployment script with guided setup
@@ -456,6 +483,7 @@ gcloud secrets versions access latest --secret=supabase-url
 - [x] Scaling configuration (0-10 instances)
 
 ### Part 2: Supabase Service Account Authentication ✅
+
 - [x] Supabase client uses service role key
 - [x] Secret Manager configuration documented
 - [x] Environment variables configured
@@ -463,6 +491,7 @@ gcloud secrets versions access latest --secret=supabase-url
 - [x] Database writes implemented
 
 ### Part 3: Frontend Integration ✅
+
 - [x] Next.js API route `/api/process-job` created
 - [x] Signed URL generation implemented
 - [x] Status polling hook created
@@ -470,6 +499,7 @@ gcloud secrets versions access latest --secret=supabase-url
 - [x] TypeScript types defined
 
 ### Part 4: Security & CORS ✅
+
 - [x] CORS policies configured
 - [x] API key authentication support
 - [x] RLS enforcement
@@ -489,4 +519,4 @@ gcloud secrets versions access latest --secret=supabase-url
 
 ---
 
-*Last Updated: 2025-10-13*
+_Last Updated: 2025-10-13_

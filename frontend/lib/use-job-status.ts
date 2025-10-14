@@ -1,6 +1,11 @@
 import { useEffect, useState, useCallback } from 'react';
 
-export type JobStatus = 'uploading' | 'pending' | 'processing' | 'completed' | 'failed';
+export type JobStatus =
+  | 'uploading'
+  | 'pending'
+  | 'processing'
+  | 'completed'
+  | 'failed';
 
 export interface JobStatusData {
   id: string;
@@ -64,12 +69,7 @@ export function useJobStatus(
   jobId: string | null,
   options: UseJobStatusOptions = {}
 ): UseJobStatusReturn {
-  const {
-    interval = 3000,
-    enabled = true,
-    onComplete,
-    onError,
-  } = options;
+  const { interval = 3000, enabled = true, onComplete, onError } = options;
 
   const [job, setJob] = useState<JobStatusData | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -92,7 +92,9 @@ export function useJobStatus(
       // Get auth token from Supabase client
       const { createBrowserClient } = await import('@/lib/supabase');
       const supabase = createBrowserClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session) {
         throw new Error('Not authenticated');
@@ -219,7 +221,9 @@ export function useProcessJob() {
       // Get auth token from Supabase client
       const { createBrowserClient } = await import('@/lib/supabase');
       const supabase = createBrowserClient();
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
 
       if (!session) {
         throw new Error('Not authenticated');

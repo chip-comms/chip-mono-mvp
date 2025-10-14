@@ -42,17 +42,18 @@ serve(async (req) => {
 
     // Validate job can be processed
     if (job.status !== 'pending') {
-      throw new Error(
-        `Job cannot be processed. Current status: ${job.status}`
-      );
+      throw new Error(`Job cannot be processed. Current status: ${job.status}`);
     }
 
-    console.log(`[process-meeting] Job found. Storage path: ${job.storage_path}`);
+    console.log(
+      `[process-meeting] Job found. Storage path: ${job.storage_path}`
+    );
 
     // Generate signed URL for Python backend (2 hour expiry)
-    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
-      .from('recordings')
-      .createSignedUrl(job.storage_path, 7200); // 2 hours in seconds
+    const { data: signedUrlData, error: signedUrlError } =
+      await supabase.storage
+        .from('recordings')
+        .createSignedUrl(job.storage_path, 7200); // 2 hours in seconds
 
     if (signedUrlError || !signedUrlData) {
       console.error('[process-meeting] Signed URL error:', signedUrlError);
@@ -66,7 +67,7 @@ serve(async (req) => {
       .from('processing_jobs')
       .update({
         status: 'processing',
-        updated_at: new Date().toISOString()
+        updated_at: new Date().toISOString(),
       })
       .eq('id', jobId);
 

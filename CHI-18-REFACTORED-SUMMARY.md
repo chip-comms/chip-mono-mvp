@@ -20,22 +20,26 @@ The original implementation used Next.js API routes to call the Python backend. 
 ## Architecture Comparison
 
 ### ❌ Old Architecture (Next.js API Routes)
+
 ```
 Frontend → Next.js API Route → Python Backend → Supabase
 ```
 
 Problems:
+
 - Frontend would need Python backend URL
 - CORS configuration required
 - More complex auth flow
 - Two separate deployment domains
 
 ### ✅ New Architecture (Edge Functions)
+
 ```
 Frontend → Supabase Edge Function → Python Backend → Supabase
 ```
 
 Benefits:
+
 - Frontend only talks to Supabase
 - No CORS issues
 - Simpler auth (just pass access token)
@@ -104,6 +108,7 @@ chip-mono-mvp/
 **Purpose:** Triggers processing of an uploaded video/audio file
 
 **Flow:**
+
 1. Receives `jobId` from frontend
 2. Validates job exists and status is `pending`
 3. Generates signed URL for Python backend (2 hour expiry)
@@ -114,6 +119,7 @@ chip-mono-mvp/
 **Authentication:** Service role key (admin access)
 
 **Configuration:**
+
 ```toml
 [functions.process-meeting]
 verify_jwt = false  # Edge Function handles auth manually
@@ -124,6 +130,7 @@ verify_jwt = false  # Edge Function handles auth manually
 **Purpose:** Polls current status of a processing job
 
 **Flow:**
+
 1. Receives `jobId` from frontend
 2. Verifies user is authenticated
 3. Fetches job status from database (RLS enforced)
@@ -133,6 +140,7 @@ verify_jwt = false  # Edge Function handles auth manually
 **Authentication:** User access token (RLS enforced)
 
 **Configuration:**
+
 ```toml
 [functions.get-job-status]
 verify_jwt = true  # Automatic JWT verification
@@ -179,13 +187,14 @@ const { job, isLoading, error } = useJobStatus(jobId, {
   },
   onError: (job) => {
     toast.error(`Processing failed: ${job.error}`);
-  }
+  },
 });
 
 // job.status: 'uploading' | 'pending' | 'processing' | 'completed' | 'failed'
 ```
 
 Both hooks:
+
 - Automatically get user's auth token
 - Call appropriate Edge Function
 - Handle errors gracefully
@@ -293,18 +302,22 @@ CORS_ORIGINS=https://kfikvadshmptpwscgbyu.supabase.co
 ### New Architecture Benefits
 
 ✅ **Frontend never knows Python backend URL**
+
 - Reduces attack surface
 - No direct access to processing service
 
 ✅ **Service role key only in Edge Functions**
+
 - Never exposed to frontend
 - Managed securely by Supabase
 
 ✅ **Automatic RLS enforcement**
+
 - Users can only access their own jobs
 - No manual auth checks needed
 
 ✅ **API key authentication**
+
 - Edge Function ↔ Python backend secured
 - Prevents unauthorized processing requests
 
@@ -332,6 +345,7 @@ npm run dev
 ### Test locally
 
 Edge Functions available at:
+
 - `http://localhost:54321/functions/v1/process-meeting`
 - `http://localhost:54321/functions/v1/get-job-status`
 
@@ -439,11 +453,13 @@ supabase secrets set PYTHON_BACKEND_URL=https://your-service.run.app
 ### "Failed to connect to processing service"
 
 1. Check Python backend is running:
+
    ```bash
    curl https://your-service.run.app/api/health
    ```
 
 2. Check API key matches:
+
    ```bash
    # Edge Function secret
    supabase secrets get PYTHON_BACKEND_API_KEY
@@ -503,5 +519,5 @@ supabase secrets set PYTHON_BACKEND_URL=https://your-service.run.app
 
 ---
 
-*Last Updated: 2025-10-13*
-*Linear Ticket: CHI-18*
+_Last Updated: 2025-10-13_
+_Linear Ticket: CHI-18_
