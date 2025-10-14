@@ -45,6 +45,10 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
         provided_key = auth_header.replace("Bearer ", "")
 
         # Validate API key
+        print(f"[AUTH] Provided key length: {len(provided_key)}, first 10: {provided_key[:10]}")
+        print(f"[AUTH] Expected key length: {len(self.api_key) if self.api_key else 0}, first 10: {self.api_key[:10] if self.api_key else 'None'}")
+        print(f"[AUTH] Keys match: {provided_key == self.api_key}")
+
         if provided_key != self.api_key:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,

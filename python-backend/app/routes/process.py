@@ -189,20 +189,16 @@ Provide your response in JSON format with keys: summary, key_topics (array), act
 @router.post("/process", response_model=ProcessJobResponse)
 async def process_job(
     request: ProcessJobRequest,
-    background_tasks: BackgroundTasks,
-    x_api_key: str = Header(None, alias="X-API-Key")
+    background_tasks: BackgroundTasks
 ) -> ProcessJobResponse:
     """
     Start processing a video/audio file.
 
     This endpoint receives a job request from Next.js, validates it,
     and starts the processing in the background.
-    """
 
-    # Optional: Validate API key if configured
-    api_key = os.getenv("API_KEY")
-    if api_key and x_api_key != api_key:
-        raise HTTPException(status_code=401, detail="Invalid API key")
+    Note: Authentication is handled by APIKeyMiddleware
+    """
 
     # Validate request
     if not request.job_id or not request.file_url:
