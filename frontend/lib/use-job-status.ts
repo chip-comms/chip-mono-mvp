@@ -90,8 +90,8 @@ export function useJobStatus(
       }
 
       // Get auth token from Supabase client
-      const { createBrowserClient } = await import('@/lib/supabase');
-      const supabase = createBrowserClient();
+      const { createClient } = await import('@/lib/supabase');
+      const supabase = createClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -219,8 +219,8 @@ export function useProcessJob() {
       }
 
       // Get auth token from Supabase client
-      const { createBrowserClient } = await import('@/lib/supabase');
-      const supabase = createBrowserClient();
+      const { createClient } = await import('@/lib/supabase');
+      const supabase = createClient();
       const {
         data: { session },
       } = await supabase.auth.getSession();
