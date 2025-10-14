@@ -89,8 +89,9 @@ info "Project number: $PROJECT_NUMBER"
 # Set region
 REGION=${REGION:-us-central1}
 echo ""
-CUSTOM_REGION=$(prompt "Deploy region (default: $REGION)")
-if [ ! -z "$CUSTOM_REGION" ]; then
+echo "Common regions: us-central1, us-east1, us-west1, europe-west1"
+CUSTOM_REGION=$(prompt "Deploy region (press Enter for default: $REGION)")
+if [ ! -z "$CUSTOM_REGION" ] && [ "$CUSTOM_REGION" != "y" ] && [ "$CUSTOM_REGION" != "n" ]; then
     REGION=$CUSTOM_REGION
 fi
 info "Using region: $REGION"
@@ -142,59 +143,74 @@ echo "================================================"
 echo "  Secret Configuration"
 echo "================================================"
 echo ""
-warn "You'll need the following credentials:"
-echo "  1. Supabase URL (e.g., https://xxxxx.supabase.co)"
-echo "  2. Supabase Service Role Key (from Settings > API)"
-echo "  3. Gemini API Key (or other AI provider)"
-echo ""
 
-SETUP_SECRETS=$(prompt "Setup secrets now? (y/n)")
-
-if [ "$SETUP_SECRETS" = "y" ]; then
-    # Supabase URL
-    if gcloud secrets describe supabase-url &>/dev/null; then
-        info "Secret 'supabase-url' already exists"
-    else
-        SUPABASE_URL=$(prompt "Enter Supabase URL")
-        echo -n "$SUPABASE_URL" | gcloud secrets create supabase-url --data-file=-
-        info "Created secret 'supabase-url'"
-    fi
-
-    # Supabase Service Role Key
-    if gcloud secrets describe supabase-service-role-key &>/dev/null; then
-        info "Secret 'supabase-service-role-key' already exists"
-    else
-        echo ""
-        warn "IMPORTANT: Use the service_role key, NOT the anon key!"
-        SUPABASE_KEY=$(prompt "Enter Supabase Service Role Key")
-        echo -n "$SUPABASE_KEY" | gcloud secrets create supabase-service-role-key --data-file=-
-        info "Created secret 'supabase-service-role-key'"
-    fi
-
-    # Gemini API Key
-    if gcloud secrets describe gemini-api-key &>/dev/null; then
-        info "Secret 'gemini-api-key' already exists"
-    else
-        GEMINI_KEY=$(prompt "Enter Gemini API Key (or press Enter to skip)")
-        if [ ! -z "$GEMINI_KEY" ]; then
-            echo -n "$GEMINI_KEY" | gcloud secrets create gemini-api-key --data-file=-
-            info "Created secret 'gemini-api-key'"
-        fi
-    fi
-
-    # Grant secret access to Cloud Run service account
-    echo ""
-    echo "Granting secret access to Cloud Run service account..."
-    for SECRET in supabase-url supabase-service-role-key gemini-api-key; do
-        if gcloud secrets describe $SECRET &>/dev/null; then
-            gcloud secrets add-iam-policy-binding $SECRET \
-              --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
-              --role="roles/secretmanager.secretAccessor" \
-              --quiet || warn "Could not grant access to $SECRET (may already exist)"
-        fi
-    done
-    info "Secret access configured"
+# Check for .env.deploy file
+if [ ! -f ".env.deploy" ]; then
+    error ".env.deploy file not found! Please create it from .env.deploy.example"
 fi
+
+# Load environment variables from .env.deploy
+export $(cat .env.deploy | grep -v '^#' | xargs)
+
+info "Loaded secrets from .env.deploy"
+
+# Validate required secrets
+if [ -z "$SUPABASE_URL" ]; then
+    error "SUPABASE_URL not set in .env.deploy"
+fi
+
+if [ -z "$SUPABASE_SECRET_KEY" ]; then
+    error "SUPABASE_SECRET_KEY not set in .env.deploy"
+fi
+
+if [ -z "$GEMINI_API_KEY" ]; then
+    warn "GEMINI_API_KEY not set in .env.deploy (you may skip if using OpenAI)"
+fi
+
+echo ""
+echo "Creating/updating secrets in Google Secret Manager..."
+
+# Supabase URL
+if gcloud secrets describe supabase-url &>/dev/null; then
+    echo -n "$SUPABASE_URL" | gcloud secrets versions add supabase-url --data-file=-
+    info "Updated secret 'supabase-url'"
+else
+    echo -n "$SUPABASE_URL" | gcloud secrets create supabase-url --data-file=-
+    info "Created secret 'supabase-url'"
+fi
+
+# Supabase Secret Key
+if gcloud secrets describe supabase-service-role-key &>/dev/null; then
+    echo -n "$SUPABASE_SECRET_KEY" | gcloud secrets versions add supabase-service-role-key --data-file=-
+    info "Updated secret 'supabase-service-role-key'"
+else
+    echo -n "$SUPABASE_SECRET_KEY" | gcloud secrets create supabase-service-role-key --data-file=-
+    info "Created secret 'supabase-service-role-key'"
+fi
+
+# Gemini API Key
+if [ ! -z "$GEMINI_API_KEY" ]; then
+    if gcloud secrets describe gemini-api-key &>/dev/null; then
+        echo -n "$GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key --data-file=-
+        info "Updated secret 'gemini-api-key'"
+    else
+        echo -n "$GEMINI_API_KEY" | gcloud secrets create gemini-api-key --data-file=-
+        info "Created secret 'gemini-api-key'"
+    fi
+fi
+
+# Grant secret access to Cloud Run service account
+echo ""
+echo "Granting secret access to Cloud Run service account..."
+for SECRET in supabase-url supabase-service-role-key gemini-api-key; do
+    if gcloud secrets describe $SECRET &>/dev/null; then
+        gcloud secrets add-iam-policy-binding $SECRET \
+          --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
+          --role="roles/secretmanager.secretAccessor" \
+          --quiet 2>/dev/null || true
+    fi
+done
+info "Secret access configured"
 
 ###############################################################################
 # Step 6: Build Container
@@ -229,11 +245,6 @@ echo "  Deploying to Cloud Run"
 echo "================================================"
 echo ""
 
-# Get CORS origins
-echo ""
-FRONTEND_URL=$(prompt "Enter your frontend URL (e.g., https://yourdomain.com)")
-CORS_ORIGINS="${FRONTEND_URL},http://localhost:3000"
-
 echo ""
 echo "Deploying service..."
 echo "  Memory: 2Gi"
@@ -241,6 +252,8 @@ echo "  CPU: 2"
 echo "  Timeout: 300s"
 echo "  Min instances: 0"
 echo "  Max instances: 10"
+echo ""
+echo "Note: CORS not needed - Python backend only receives requests from Edge Functions"
 echo ""
 
 gcloud run deploy meeting-intelligence-backend \
@@ -253,8 +266,8 @@ gcloud run deploy meeting-intelligence-backend \
   --timeout 300s \
   --min-instances 0 \
   --max-instances 10 \
-  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SERVICE_ROLE_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest" \
-  --set-env-vars "PORT=8080,AI_PROVIDER=gemini,CORS_ORIGINS=${CORS_ORIGINS}" \
+  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest" \
+  --set-env-vars "AI_PROVIDER=gemini" \
   --quiet
 
 ###############################################################################

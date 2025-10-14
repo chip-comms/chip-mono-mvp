@@ -12,7 +12,7 @@ from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
 from pydantic import BaseModel
 
 from app.services.supabase_client import SupabaseClient
-from app.services.audio.transcription import transcribe_audio
+from app.services.audio.transcription import TranscriptionService
 from app.services.llm.llm_adapter import LLMAdapter
 
 router = APIRouter()
@@ -73,7 +73,8 @@ async def process_job_task(
 
         # Step 1: Transcribe audio
         print(f"[Job {job_id}] Starting transcription...")
-        transcription_result = await transcribe_audio(str(temp_file))
+        transcription_service = TranscriptionService()
+        transcription_result = transcription_service.transcribe(temp_file)
 
         if not transcription_result or 'error' in transcription_result:
             raise Exception(f"Transcription failed: {transcription_result.get('error', 'Unknown error')}")

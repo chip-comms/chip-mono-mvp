@@ -10,10 +10,10 @@ from typing import Dict, Any, Optional
 class SupabaseClient:
     def __init__(self):
         self.url = os.getenv("SUPABASE_URL")
-        self.service_key = os.getenv("SUPABASE_SERVICE_ROLE_KEY")
-        
+        self.service_key = os.getenv("SUPABASE_SECRET_KEY")
+
         if not self.url or not self.service_key:
-            raise ValueError("SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY must be set in environment")
+            raise ValueError("SUPABASE_URL and SUPABASE_SECRET_KEY must be set in environment")
         
         self.headers = {
             "apikey": self.service_key,
