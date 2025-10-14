@@ -1,7 +1,7 @@
 import 'server-only';
 import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
-import type { Database } from '@/../../supabase-backend/database.types';
+import type { Database } from '@/../../supabase/database.types';
 
 /**
  * Creates a Supabase client for use in Server Components, Server Actions, and Route Handlers

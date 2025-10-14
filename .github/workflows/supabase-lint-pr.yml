@@ -11,11 +11,11 @@ on:
       - main
       - develop
     paths:
-      - 'supabase-backend/**'
-      - '.github/workflows/supabase-backend-lint-pr.yml'
+      - 'supabase/**'
+      - '.github/workflows/supabase-lint-pr.yml'
 
 jobs:
-  supabase-backend-quality-check:
+  supabase-quality-check:
     runs-on: ubuntu-latest
     
     steps:
@@ -31,22 +31,22 @@ jobs:
           cache: 'npm'
           cache-dependency-path: |
             package-lock.json
-            supabase-backend/package-lock.json
+            supabase/package-lock.json
       
       - name: Get changed files
         id: changed-files
         uses: tj-actions/changed-files@v44
         with:
           files: |
-            supabase-backend/**/*.ts
-            supabase-backend/**/*.js
-            supabase-backend/**/*.json
-            supabase-backend/**/*.md
+            supabase/**/*.ts
+            supabase/**/*.js
+            supabase/**/*.json
+            supabase/**/*.md
       
       - name: Skip if no changes
         if: steps.changed-files.outputs.any_changed != 'true'
         run: |
-          echo "No supabase-backend files changed, skipping workflow"
+          echo "No supabase files changed, skipping workflow"
           exit 0
       
       - name: Install dependencies (workspace-aware)
@@ -60,8 +60,8 @@ jobs:
         run: |
           echo "Checking formatting for changed files..."
           
-          # Get prettier-compatible files from supabase-backend only
-          PRETTIER_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^supabase-backend/.*\.(ts|js|json|md)$' | tr '\n' ' ')
+          # Get prettier-compatible files from supabase only
+          PRETTIER_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^supabase/.*\.(ts|js|json|md)$' | tr '\n' ' ')
           
           if [ -n "$PRETTIER_FILES" ]; then
             echo "Checking formatting for: $PRETTIER_FILES"
@@ -70,27 +70,27 @@ jobs:
             echo "No files to format"
           fi
       
-      - name: Lint supabase-backend files
+      - name: Lint supabase files
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
-          # Check if supabase-backend files changed
-          BACKEND_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '^supabase-backend/' | tr '\n' ' ')
+          # Check if supabase files changed
+          BACKEND_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep '^supabase/' | tr '\n' ' ')
           if [ -n "$BACKEND_FILES" ]; then
-            echo "Linting supabase-backend files..."
-            cd supabase-backend
+            echo "Linting supabase files..."
+            cd supabase
             npx eslint .
           else
-            echo "No supabase-backend files to lint"
+            echo "No supabase files to lint"
           fi
       
       - name: TypeScript type check
         if: steps.changed-files.outputs.any_changed == 'true'
         run: |
           # Check if TypeScript files changed
-          TS_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^supabase-backend/.*\.ts$' | tr '\n' ' ')
+          TS_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^supabase/.*\.ts$' | tr '\n' ' ')
           if [ -n "$TS_FILES" ]; then
             echo "Running TypeScript type check..."
-            cd supabase-backend
+            cd supabase
             npx tsc --noEmit
           else
             echo "No TypeScript files to check"

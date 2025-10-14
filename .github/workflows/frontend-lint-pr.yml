@@ -32,7 +32,7 @@ jobs:
           cache-dependency-path: |
             package-lock.json
             frontend/package-lock.json
-            supabase-backend/package-lock.json
+            supabase/package-lock.json
       
       - name: Get changed files
         id: changed-files
