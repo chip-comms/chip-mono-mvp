@@ -26,7 +26,8 @@ async function setupStorage() {
   console.log('🔍 Checking if recordings bucket exists...');
 
   // Check if bucket exists
-  const { data: buckets, error: listError } = await supabase.storage.listBuckets();
+  const { data: buckets, error: listError } =
+    await supabase.storage.listBuckets();
 
   if (listError) {
     console.error('❌ Error listing buckets:', listError);
@@ -45,9 +46,8 @@ async function setupStorage() {
   console.log('📦 Creating recordings bucket...');
 
   // Create bucket
-  const { data: newBucket, error: createError } = await supabase.storage.createBucket(
-    'recordings',
-    {
+  const { data: newBucket, error: createError } =
+    await supabase.storage.createBucket('recordings', {
       public: false,
       fileSizeLimit: 524288000, // 500MB in bytes
       allowedMimeTypes: [
@@ -67,8 +67,7 @@ async function setupStorage() {
         'audio/ogg',
         'audio/x-m4a',
       ],
-    }
-  );
+    });
 
   if (createError) {
     console.error('❌ Error creating bucket:', createError);

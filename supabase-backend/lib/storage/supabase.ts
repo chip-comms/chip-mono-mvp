@@ -44,9 +44,7 @@ export class SupabaseStorageAdapter implements StorageAdapter {
     originalFilename?: string
   ): Promise<string> {
     if (!userId || !originalFilename) {
-      throw new Error(
-        'User ID and original filename are required for storage'
-      );
+      throw new Error('User ID and original filename are required for storage');
     }
 
     const storagePath = this.generateStoragePath(userId, id, originalFilename);
