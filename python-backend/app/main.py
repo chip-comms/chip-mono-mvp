@@ -13,7 +13,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-from app.routes import health, video, audio, analysis
+from app.routes import health, video, audio, analysis, process
 
 # Load environment variables
 load_dotenv()
@@ -61,6 +61,7 @@ app.include_router(health.router, prefix="/api", tags=["health"])
 app.include_router(video.router, prefix="/api/video", tags=["video"])
 app.include_router(audio.router, prefix="/api/audio", tags=["audio"])
 app.include_router(analysis.router, prefix="/api", tags=["analysis"])
+app.include_router(process.router, prefix="/api", tags=["process"])
 
 
 @app.get("/")

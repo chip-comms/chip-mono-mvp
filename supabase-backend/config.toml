@@ -29,3 +29,6 @@ jwt_expiry = 3600
 
 [functions.process-meeting]
 verify_jwt = false
+
+[functions.get-job-status]
+verify_jwt = true

@@ -14,7 +14,7 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with service role key
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
@@ -27,12 +27,12 @@ serve(async (req) => {
       throw new Error('Missing required field: jobId');
     }
 
-    console.log(`Processing job: ${jobId}`);
+    console.log(`[process-meeting] Processing job: ${jobId}`);
 
     // Get job details
     const { data: job, error: fetchError } = await supabase
       .from('processing_jobs')
-      .select('storage_path, user_id')
+      .select('id, storage_path, user_id, original_filename, status')
       .eq('id', jobId)
       .single();
 
@@ -40,55 +40,104 @@ serve(async (req) => {
       throw new Error(`Job not found: ${jobId}`);
     }
 
+    // Validate job can be processed
+    if (job.status !== 'pending') {
+      throw new Error(
+        `Job cannot be processed. Current status: ${job.status}`
+      );
+    }
+
+    console.log(`[process-meeting] Job found. Storage path: ${job.storage_path}`);
+
+    // Generate signed URL for Python backend (2 hour expiry)
+    const { data: signedUrlData, error: signedUrlError } = await supabase.storage
+      .from('recordings')
+      .createSignedUrl(job.storage_path, 7200); // 2 hours in seconds
+
+    if (signedUrlError || !signedUrlData) {
+      console.error('[process-meeting] Signed URL error:', signedUrlError);
+      throw new Error('Failed to generate download URL for processing');
+    }
+
+    console.log(`[process-meeting] Signed URL generated`);
+
     // Update job status to processing
-    await supabase
+    const { error: updateError } = await supabase
       .from('processing_jobs')
-      .update({ status: 'processing' })
+      .update({
+        status: 'processing',
+        updated_at: new Date().toISOString()
+      })
       .eq('id', jobId);
 
-    // Call Python backend for transcription and analysis
-    const pythonUrl =
-      Deno.env.get('PYTHON_BACKEND_URL') ?? 'http://localhost:8000';
+    if (updateError) {
+      console.error('[process-meeting] Status update error:', updateError);
+      throw new Error('Failed to update job status');
+    }
 
+    console.log(`[process-meeting] Job status updated to processing`);
+
+    // Get Python backend URL
+    const pythonUrl = Deno.env.get('PYTHON_BACKEND_URL');
+    if (!pythonUrl) {
+      throw new Error('PYTHON_BACKEND_URL not configured');
+    }
+
+    console.log(`[process-meeting] Calling Python backend: ${pythonUrl}`);
+
+    // Call Python backend for transcription and analysis
     const response = await fetch(`${pythonUrl}/api/process`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        // Add API key if configured
+        ...(Deno.env.get('PYTHON_BACKEND_API_KEY') && {
+          'X-API-Key': Deno.env.get('PYTHON_BACKEND_API_KEY'),
+        }),
+      },
       body: JSON.stringify({
-        jobId,
-        storagePath: job.storage_path,
-        userId: job.user_id,
+        job_id: jobId,
+        user_id: job.user_id,
+        file_url: signedUrlData.signedUrl,
+        original_filename: job.original_filename,
+        storage_path: job.storage_path,
       }),
+      // Don't wait for processing to complete (runs in background)
+      signal: AbortSignal.timeout(10000), // 10 second timeout for initial response
     });
 
     if (!response.ok) {
-      const error = await response.text();
+      const errorText = await response.text();
+      console.error('[process-meeting] Python backend error:', errorText);
 
       // Update job to failed
       await supabase
         .from('processing_jobs')
         .update({
           status: 'failed',
-          processing_error: `Python backend error: ${error}`,
+          processing_error: `Backend error: ${response.statusText}`,
         })
         .eq('id', jobId);
 
-      throw new Error(`Python backend failed: ${error}`);
+      throw new Error(`Python backend failed: ${errorText}`);
     }
 
     const result = await response.json();
+    console.log(`[process-meeting] Python backend responded:`, result);
 
     return new Response(
       JSON.stringify({
         success: true,
         jobId,
-        result,
+        message: 'Processing started',
+        pythonJobId: result.python_job_id,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       }
     );
   } catch (error) {
-    console.error('Edge Function error:', error);
+    console.error('[process-meeting] Edge Function error:', error);
 
     return new Response(
       JSON.stringify({
