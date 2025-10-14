@@ -3,9 +3,9 @@
  * Shared across frontend and API routes
  */
 
-// Maximum file size: 500MB
-export const MAX_FILE_SIZE = 500 * 1024 * 1024; // 500MB in bytes
-export const MAX_FILE_SIZE_MB = 500;
+// Maximum file size: 50MB (Supabase free tier limit)
+export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB in bytes
+export const MAX_FILE_SIZE_MB = 50;
 
 // Supported video MIME types
 export const VIDEO_MIME_TYPES = {

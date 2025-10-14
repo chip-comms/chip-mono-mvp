@@ -23,6 +23,12 @@ export async function POST(request: NextRequest) {
       error: authError,
     } = await supabase.auth.getUser();
 
+    console.log('Auth check:', {
+      hasUser: !!user,
+      userId: user?.id,
+      authError: authError?.message,
+    });
+
     if (authError || !user) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
@@ -53,44 +59,64 @@ export async function POST(request: NextRequest) {
     // Generate unique job ID
     const jobId = randomUUID();
 
-    // Generate storage path
+    // Generate storage path (relative to bucket, not including bucket name)
     const now = new Date();
     const year = now.getFullYear();
     const month = String(now.getMonth() + 1).padStart(2, '0');
     const ext = getFileExtension(file.name);
-    const storagePath = `recordings/${user.id}/${year}/${month}/${jobId}.${ext}`;
-
-    // Convert file to buffer
-    const arrayBuffer = await file.arrayBuffer();
-    const buffer = new Uint8Array(arrayBuffer);
+    const storagePath = `${user.id}/${year}/${month}/${jobId}.${ext}`;
 
     // Upload to Supabase Storage
-    const { error: uploadError } = await supabase.storage
+    console.log('Attempting upload to:', storagePath);
+    console.log(
+      'File size:',
+      file.size,
+      'bytes (',
+      (file.size / 1024 / 1024).toFixed(2),
+      'MB)'
+    );
+    console.log('Content type:', file.type);
+    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
+
+    // Convert File to ArrayBuffer for upload
+    const fileArrayBuffer = await file.arrayBuffer();
+
+    const { data: uploadData, error: uploadError } = await supabase.storage
       .from('recordings')
-      .upload(storagePath, buffer, {
+      .upload(storagePath, fileArrayBuffer, {
         contentType: file.type,
         cacheControl: '3600',
         upsert: false,
       });
 
     if (uploadError) {
-      console.error('Upload error:', uploadError);
+      console.error('Upload error details:', {
+        message: uploadError.message,
+        name: uploadError.name,
+        statusCode: (uploadError as any).statusCode,
+        error: (uploadError as any).error,
+      });
       return NextResponse.json(
         {
           success: false,
           message: `Failed to upload file: ${uploadError.message}`,
+          error: uploadError.message,
         },
         { status: 500 }
       );
     }
 
+    console.log('Upload successful:', uploadData);
+
     // Create processing job record
+    // Convert file size from bytes to megabytes
+    const fileSizeMB = Number((file.size / (1024 * 1024)).toFixed(2));
+
     const { error: dbError } = await supabase.from('processing_jobs').insert({
       id: jobId,
       user_id: user.id,
       original_filename: file.name,
-      file_size: file.size,
-      mime_type: file.type,
+      file_size_mb: fileSizeMB,
       storage_path: storagePath,
       status: 'pending',
     });
