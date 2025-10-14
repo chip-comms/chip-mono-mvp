@@ -121,8 +121,10 @@ The database follows a simple single-tenant architecture:
 
 1. **Users** (`users` table)
    - Tied to Supabase Auth (`id` matches `auth.uid()`)
-   - Stores user profile information (email, full_name, avatar_url)
+   - Stores user profile information (email, full_name, avatar_url, username)
    - `first_login_completed` tracks onboarding status
+   - `username` column exists but is currently not used in UI (reserved for future use)
+   - User records automatically created by database trigger on signup
 
 2. **Processing Jobs** (`processing_jobs` table)
    - Tracks video/audio upload and processing status
@@ -189,8 +191,45 @@ When adding new AI providers:
 - **Authentication:** Supabase Auth with middleware (`frontend/middleware.ts`)
 - **UI Components:** Shared components in `frontend/components/`
 - **Client Libraries:**
-  - `frontend/lib/supabase.ts` - Supabase client initialization
-  - `frontend/lib/auth.ts` - Authentication utilities
+  - `frontend/lib/supabase.ts` - Browser Supabase client
+  - `frontend/lib/supabase-server.ts` - Server Supabase client (SSR)
+  - `frontend/lib/auth.ts` - Client-side auth utilities
+  - `frontend/lib/auth-server.ts` - Server-side auth utilities
+
+### Authentication System
+
+**Route Structure:**
+
+- `/` - Public landing page
+- `/platform/login` - Public login page
+- `/platform/signup` - Public signup page
+- `/platform/dashboard` - Protected dashboard (requires authentication)
+- `/platform/(auth)/*` - Protected route group with automatic auth checks
+
+**Authentication Flow:**
+
+1. **Sign Up:** User creates account with email and password
+   - Supabase Auth creates auth user
+   - Database trigger (`handle_new_user()`) automatically creates user record in `users` table
+   - Session established if email confirmation is disabled
+   - Redirect to dashboard on success
+
+2. **Sign In:** User logs in with email and password
+   - Supabase Auth verifies credentials
+   - Session stored in cookies
+   - Redirect to dashboard on success
+
+3. **Protected Routes:** Middleware protects all `/platform/*` routes except login/signup
+   - Unauthenticated users redirected to `/platform/login`
+   - Authenticated users on login/signup pages redirected to `/platform/dashboard`
+
+**Database Trigger:**
+
+- `handle_new_user()` function runs on `auth.users` INSERT
+- Automatically creates corresponding record in `public.users` table
+- Runs with `SECURITY DEFINER` privilege to bypass RLS
+
+**Note:** Username functionality exists in database but is currently disabled in the UI. Can be re-enabled in future.
 
 ## Python Backend Structure
 
