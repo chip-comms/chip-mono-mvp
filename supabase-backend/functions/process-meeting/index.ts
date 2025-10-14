@@ -7,111 +7,93 @@ const corsHeaders = {
     'authorization, x-client-info, apikey, content-type',
 };
 
-console.log("🚀 Edge Function 'process-meeting' initialized");
-
 serve(async (req) => {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
   }
 
   try {
-    console.log('📝 Processing meeting analysis request...');
-
-    // Initialize Supabase client with service role
-    const supabaseClient = createClient(
+    // Initialize Supabase client
+    const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    // Get request data
-    const { videoUrl, jobId } = await req.json();
-    console.log(`📋 Processing job ${jobId} for video: ${videoUrl}`);
+    // Parse request
+    const { jobId } = await req.json();
 
-    if (!videoUrl || !jobId) {
-      throw new Error('Missing required fields: videoUrl and jobId');
+    if (!jobId) {
+      throw new Error('Missing required field: jobId');
+    }
+
+    console.log(`Processing job: ${jobId}`);
+
+    // Get job details
+    const { data: job, error: fetchError } = await supabase
+      .from('processing_jobs')
+      .select('storage_path, user_id')
+      .eq('id', jobId)
+      .single();
+
+    if (fetchError || !job) {
+      throw new Error(`Job not found: ${jobId}`);
     }
 
     // Update job status to processing
-    const { error: updateError } = await supabaseClient
+    await supabase
       .from('processing_jobs')
       .update({ status: 'processing' })
       .eq('id', jobId);
 
-    if (updateError) {
-      console.error('❌ Failed to update job status:', updateError);
-      throw new Error(`Database update failed: ${updateError.message}`);
-    }
-
-    console.log('✅ Job status updated to processing');
-
-    // Call Python backend
-    const pythonBackendUrl =
+    // Call Python backend for transcription and analysis
+    const pythonUrl =
       Deno.env.get('PYTHON_BACKEND_URL') ?? 'http://localhost:8000';
-    console.log(
-      `🐍 Calling Python backend at: ${pythonBackendUrl}/api/analyze-meeting`
-    );
 
-    const pythonResponse = await fetch(
-      `${pythonBackendUrl}/api/analyze-meeting`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          videoUrl: videoUrl,
-          jobId: jobId,
-        }),
-      }
-    );
+    const response = await fetch(`${pythonUrl}/api/process`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        jobId,
+        storagePath: job.storage_path,
+        userId: job.user_id,
+      }),
+    });
 
-    console.log(`🔍 Python backend response status: ${pythonResponse.status}`);
+    if (!response.ok) {
+      const error = await response.text();
 
-    if (!pythonResponse.ok) {
-      const errorText = await pythonResponse.text();
-      console.error('❌ Python backend error:', errorText);
-
-      // Update job status to failed
-      await supabaseClient
+      // Update job to failed
+      await supabase
         .from('processing_jobs')
         .update({
           status: 'failed',
-          processing_error: `Python backend error: ${pythonResponse.status} - ${errorText}`,
+          processing_error: `Python backend error: ${error}`,
         })
         .eq('id', jobId);
 
-      throw new Error(
-        `Python backend error: ${pythonResponse.status} - ${errorText}`
-      );
+      throw new Error(`Python backend failed: ${error}`);
     }
 
-    const pythonResult = await pythonResponse.json();
-    console.log(
-      '✅ Python backend processing started successfully:',
-      pythonResult
-    );
+    const result = await response.json();
 
     return new Response(
       JSON.stringify({
         success: true,
-        jobId: jobId,
-        message: 'Processing started successfully',
-        pythonBackendResponse: pythonResult,
+        jobId,
+        result,
       }),
       {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-        status: 200,
       }
     );
   } catch (error) {
-    console.error('❌ Edge Function error:', error);
+    console.error('Edge Function error:', error);
 
     return new Response(
       JSON.stringify({
-        error: error.message || 'Unknown error occurred',
-        timestamp: new Date().toISOString(),
+        success: false,
+        error: error.message,
       }),
       {
         status: 500,

@@ -190,23 +190,6 @@ export interface MeetingAnalysis {
 }
 
 
-// ============================================================================
-// Configuration Types
-// ============================================================================
-
-export interface Config {
-  // AI Provider API Keys
-  openaiApiKey: string;
-  geminiApiKey: string;
-  anthropicApiKey: string;
-
-  // AI Provider Selection
-  aiProvider: 'auto' | 'openai' | 'gemini' | 'anthropic';
-
-  maxFileSizeMB: number;
-  supportedFormats: string[];
-  companyValues: string[]; // Company values to analyze
-}
 
 // ============================================================================
 // Storage Adapter Interface
