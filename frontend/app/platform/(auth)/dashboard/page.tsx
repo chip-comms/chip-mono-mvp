@@ -1,6 +1,36 @@
+'use client';
+
+import FileUploadZone from '@/components/FileUploadZone';
+import { useState } from 'react';
+
 export default function DashboardPage() {
+  const [uploadSuccess, setUploadSuccess] = useState(false);
+
+  const handleUploadComplete = (response: {
+    jobId?: string;
+    message?: string;
+  }) => {
+    console.log('Upload complete:', response);
+    setUploadSuccess(true);
+    // Reset success message after 5 seconds
+    setTimeout(() => setUploadSuccess(false), 5000);
+  };
+
+  const handleUploadError = (error: string) => {
+    console.error('Upload error:', error);
+  };
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {/* Success Message */}
+      {uploadSuccess && (
+        <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-md">
+          <p className="text-sm text-green-800">
+            Meeting uploaded successfully! Processing will begin shortly.
+          </p>
+        </div>
+      )}
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow-sm">
@@ -19,19 +49,13 @@ export default function DashboardPage() {
 
       {/* Upload Section */}
       <div className="bg-white rounded-lg shadow-sm p-8 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+        <h2 className="text-xl font-semibold text-gray-900 mb-6">
           Upload a Meeting
         </h2>
-        <div className="border-2 border-dashed border-gray-300 rounded-lg p-12 text-center hover:border-gray-400 transition">
-          <div className="text-4xl mb-4">📁</div>
-          <p className="text-gray-600 mb-2">
-            Drag and drop your meeting recording here
-          </p>
-          <p className="text-sm text-gray-500 mb-4">or click to browse files</p>
-          <button className="px-6 py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition">
-            Select File
-          </button>
-        </div>
+        <FileUploadZone
+          onUploadComplete={handleUploadComplete}
+          onUploadError={handleUploadError}
+        />
       </div>
 
       {/* Recent Meetings */}

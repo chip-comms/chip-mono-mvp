@@ -18,11 +18,11 @@ export class SupabaseStorageAdapter implements StorageAdapter {
   }
 
   /**
-   * Generates a structured storage path for multi-tenant organization
-   * Format: recordings/{org_slug}/{year}/{month}/{job_id}.{ext}
+   * Generates a structured storage path for user recordings
+   * Format: recordings/{user_id}/{year}/{month}/{job_id}.{ext}
    */
   generateStoragePath(
-    orgSlug: string,
+    userId: string,
     jobId: string,
     originalFilename: string
   ): string {
@@ -33,23 +33,21 @@ export class SupabaseStorageAdapter implements StorageAdapter {
     // Extract file extension from original filename
     const ext = originalFilename.split('.').pop() || 'mp4';
 
-    return `recordings/${orgSlug}/${year}/${month}/${jobId}.${ext}`;
+    return `recordings/${userId}/${year}/${month}/${jobId}.${ext}`;
   }
 
   async saveFile(
     id: string,
     buffer: Uint8Array,
     contentType: string,
-    orgSlug?: string,
+    userId?: string,
     originalFilename?: string
   ): Promise<string> {
-    if (!orgSlug || !originalFilename) {
-      throw new Error(
-        'Organization slug and original filename are required for multi-tenant storage'
-      );
+    if (!userId || !originalFilename) {
+      throw new Error('User ID and original filename are required for storage');
     }
 
-    const storagePath = this.generateStoragePath(orgSlug, id, originalFilename);
+    const storagePath = this.generateStoragePath(userId, id, originalFilename);
 
     try {
       const response = await fetch(
@@ -213,13 +211,13 @@ export class SupabaseStorageAdapter implements StorageAdapter {
   }
 
   /**
-   * Get storage usage for an organization
+   * Get storage usage for a user
    */
   async getStorageUsage(
-    orgSlug: string
+    userId: string
   ): Promise<{ totalSizeBytes: number; fileCount: number }> {
     try {
-      const files = await this.listFiles(`recordings/${orgSlug}/`);
+      const files = await this.listFiles(`recordings/${userId}/`);
       let totalSizeBytes = 0;
       let fileCount = 0;
 
