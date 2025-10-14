@@ -5,28 +5,15 @@
  */
 
 // ============================================================================
-// Multi-Tenant Types
+// User Types
 // ============================================================================
-
-export type UserRole = 'owner' | 'admin' | 'member' | 'viewer';
-
-export interface Organization {
-  id: string;
-  name: string;
-  slug: string;
-  settings?: Record<string, unknown>;
-  storage_quota_mb: number;
-  created_at: string;
-  updated_at: string;
-}
 
 export interface User {
   id: string; // Matches Supabase Auth user ID
   email: string;
   full_name?: string;
   avatar_url?: string;
-  organization_id: string;
-  role: UserRole;
+  first_login_completed: boolean;
   created_at: string;
   updated_at: string;
 }
@@ -50,7 +37,6 @@ export interface ProcessingJob {
   processing_error?: string;
   python_job_id?: string;
   user_id: string;
-  organization_id: string;
   file_size_mb?: number;
   duration_seconds?: number;
   delete_after?: string;
@@ -58,19 +44,6 @@ export interface ProcessingJob {
   updated_at: string;
 }
 
-// Legacy interface for backward compatibility
-export interface Recording {
-  id: string;
-  title: string;
-  filename: string;
-  fileType: string;
-  fileSizeBytes: number;
-  durationSeconds?: number;
-  status: RecordingStatus;
-  processingError?: string;
-  createdAt: string;
-  sampleFileId?: string; // Reference to shared sample file if applicable
-}
 
 // ============================================================================
 // Transcript Types
@@ -208,7 +181,6 @@ export interface MeetingAnalysis {
   id: string;
   job_id: string;
   user_id: string;
-  organization_id: string;
   summary?: string;
   transcript?: Transcript;
   speaker_stats?: SpeakerStats[];
@@ -217,45 +189,6 @@ export interface MeetingAnalysis {
   created_at: string;
 }
 
-// Legacy interface for backward compatibility
-export interface Intelligence {
-  recordingId: string;
-  transcript: Transcript;
-  summary: string;
-  actionItems: ActionItem[];
-  keyTopics: KeyTopic[];
-  sentiment: Sentiment;
-  speakerStats: SpeakerStats[];
-  communicationMetrics: CommunicationMetrics;
-  createdAt: string;
-}
-
-// ============================================================================
-// API Response Types
-// ============================================================================
-
-export interface UploadResponse {
-  success: boolean;
-  recordingId?: string;
-  error?: string;
-}
-
-export interface ProcessResponse {
-  success: boolean;
-  recordingId?: string;
-  intelligenceId?: string;
-  processingTimeSeconds?: number;
-  error?: string;
-}
-
-export interface RecordingsResponse {
-  recordings: Recording[];
-}
-
-export interface IntelligenceResponse {
-  intelligence: Intelligence | null;
-  error?: string;
-}
 
 // ============================================================================
 // Configuration Types
@@ -295,24 +228,14 @@ export interface StorageAdapter {
 // Data Adapter Interface
 // ============================================================================
 
-export interface MultiTenantDataAdapter {
-  // Organizations
-  getOrganization(id: string): Promise<Organization | null>;
-  getOrganizationBySlug(slug: string): Promise<Organization | null>;
-  saveOrganization(organization: Organization): Promise<void>;
-  updateOrganization(id: string, updates: Partial<Organization>): Promise<void>;
-
+export interface DataAdapter {
   // Users
   getUser(id: string): Promise<User | null>;
-  getUsersByOrganization(organizationId: string): Promise<User[]>;
   saveUser(user: User): Promise<void>;
   updateUser(id: string, updates: Partial<User>): Promise<void>;
 
   // Processing Jobs
-  getProcessingJobs(
-    organizationId: string,
-    userId?: string
-  ): Promise<ProcessingJob[]>;
+  getProcessingJobs(userId?: string): Promise<ProcessingJob[]>;
   getProcessingJob(id: string): Promise<ProcessingJob | null>;
   saveProcessingJob(job: ProcessingJob): Promise<void>;
   updateProcessingJob(
@@ -323,28 +246,7 @@ export interface MultiTenantDataAdapter {
 
   // Meeting Analysis
   getMeetingAnalysis(jobId: string): Promise<MeetingAnalysis | null>;
-  getMeetingAnalysesByUser(
-    userId: string,
-    organizationId: string
-  ): Promise<MeetingAnalysis[]>;
-  getMeetingAnalysesByOrganization(
-    organizationId: string
-  ): Promise<MeetingAnalysis[]>;
+  getMeetingAnalysesByUser(userId: string): Promise<MeetingAnalysis[]>;
   saveMeetingAnalysis(analysis: MeetingAnalysis): Promise<void>;
   deleteMeetingAnalysis(id: string): Promise<void>;
-}
-
-// Legacy interface for backward compatibility
-export interface DataAdapter {
-  // Recordings
-  getRecordings(): Promise<Recording[]>;
-  getRecording(id: string): Promise<Recording | null>;
-  saveRecording(recording: Recording): Promise<void>;
-  updateRecording(id: string, updates: Partial<Recording>): Promise<void>;
-  deleteRecording(id: string): Promise<void>;
-
-  // Intelligence
-  getIntelligence(recordingId: string): Promise<Intelligence | null>;
-  saveIntelligence(intelligence: Intelligence): Promise<void>;
-  deleteIntelligence(recordingId: string): Promise<void>;
 }

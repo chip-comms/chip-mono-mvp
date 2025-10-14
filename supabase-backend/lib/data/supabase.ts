@@ -1,14 +1,8 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../../database.types';
-import {
-  MultiTenantDataAdapter,
-  Organization,
-  User,
-  ProcessingJob,
-  MeetingAnalysis,
-} from '../types';
+import { DataAdapter, User, ProcessingJob, MeetingAnalysis } from '../types';
 
-export class SupabaseDataAdapter implements MultiTenantDataAdapter {
+export class SupabaseDataAdapter implements DataAdapter {
   private supabase: SupabaseClient<Database>;
 
   constructor(
@@ -17,66 +11,6 @@ export class SupabaseDataAdapter implements MultiTenantDataAdapter {
     options?: { auth?: { persistSession: boolean } }
   ) {
     this.supabase = createClient<Database>(supabaseUrl, supabaseKey, options);
-  }
-
-  // ============================================================================
-  // Organizations
-  // ============================================================================
-
-  async getOrganization(id: string): Promise<Organization | null> {
-    const { data, error } = await this.supabase
-      .from('organizations')
-      .select('*')
-      .eq('id', id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching organization:', error);
-      return null;
-    }
-
-    return data;
-  }
-
-  async getOrganizationBySlug(slug: string): Promise<Organization | null> {
-    const { data, error } = await this.supabase
-      .from('organizations')
-      .select('*')
-      .eq('slug', slug)
-      .single();
-
-    if (error) {
-      console.error('Error fetching organization by slug:', error);
-      return null;
-    }
-
-    return data;
-  }
-
-  async saveOrganization(organization: Organization): Promise<void> {
-    const { error } = await this.supabase
-      .from('organizations')
-      .insert(organization);
-
-    if (error) {
-      console.error('Error saving organization:', error);
-      throw error;
-    }
-  }
-
-  async updateOrganization(
-    id: string,
-    updates: Partial<Organization>
-  ): Promise<void> {
-    const { error } = await this.supabase
-      .from('organizations')
-      .update(updates)
-      .eq('id', id);
-
-    if (error) {
-      console.error('Error updating organization:', error);
-      throw error;
-    }
   }
 
   // ============================================================================
@@ -93,21 +27,6 @@ export class SupabaseDataAdapter implements MultiTenantDataAdapter {
     if (error) {
       console.error('Error fetching user:', error);
       return null;
-    }
-
-    return data;
-  }
-
-  async getUsersByOrganization(organizationId: string): Promise<User[]> {
-    const { data, error } = await this.supabase
-      .from('users')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching users by organization:', error);
-      return [];
     }
 
     return data;
@@ -138,14 +57,8 @@ export class SupabaseDataAdapter implements MultiTenantDataAdapter {
   // Processing Jobs
   // ============================================================================
 
-  async getProcessingJobs(
-    organizationId: string,
-    userId?: string
-  ): Promise<ProcessingJob[]> {
-    let query = this.supabase
-      .from('processing_jobs')
-      .select('*')
-      .eq('organization_id', organizationId);
+  async getProcessingJobs(userId?: string): Promise<ProcessingJob[]> {
+    let query = this.supabase.from('processing_jobs').select('*');
 
     if (userId) {
       query = query.eq('user_id', userId);
@@ -235,36 +148,15 @@ export class SupabaseDataAdapter implements MultiTenantDataAdapter {
     return data;
   }
 
-  async getMeetingAnalysesByUser(
-    userId: string,
-    organizationId: string
-  ): Promise<MeetingAnalysis[]> {
+  async getMeetingAnalysesByUser(userId: string): Promise<MeetingAnalysis[]> {
     const { data, error } = await this.supabase
       .from('meeting_analysis')
       .select('*')
       .eq('user_id', userId)
-      .eq('organization_id', organizationId)
       .order('created_at', { ascending: false });
 
     if (error) {
       console.error('Error fetching meeting analyses by user:', error);
-      return [];
-    }
-
-    return data;
-  }
-
-  async getMeetingAnalysesByOrganization(
-    organizationId: string
-  ): Promise<MeetingAnalysis[]> {
-    const { data, error } = await this.supabase
-      .from('meeting_analysis')
-      .select('*')
-      .eq('organization_id', organizationId)
-      .order('created_at', { ascending: false });
-
-    if (error) {
-      console.error('Error fetching meeting analyses by organization:', error);
       return [];
     }
 
@@ -303,18 +195,17 @@ export class SupabaseDataAdapter implements MultiTenantDataAdapter {
   ): ProcessingJob {
     return {
       id: dbJob.id,
-      storage_path: dbJob.storage_path,
-      original_filename: dbJob.original_filename,
+      storage_path: dbJob.storage_path ?? undefined,
+      original_filename: dbJob.original_filename ?? undefined,
       status: dbJob.status,
-      processing_error: dbJob.processing_error,
-      python_job_id: dbJob.python_job_id,
+      processing_error: dbJob.processing_error ?? undefined,
+      python_job_id: dbJob.python_job_id ?? undefined,
       user_id: dbJob.user_id,
-      organization_id: dbJob.organization_id,
-      file_size_mb: dbJob.file_size_mb,
-      duration_seconds: dbJob.duration_seconds,
-      delete_after: dbJob.delete_after,
-      created_at: dbJob.created_at,
-      updated_at: dbJob.updated_at,
+      file_size_mb: dbJob.file_size_mb ?? undefined,
+      duration_seconds: dbJob.duration_seconds ?? undefined,
+      delete_after: dbJob.delete_after ?? undefined,
+      created_at: dbJob.created_at ?? new Date().toISOString(),
+      updated_at: dbJob.updated_at ?? new Date().toISOString(),
     };
   }
 
@@ -323,16 +214,15 @@ export class SupabaseDataAdapter implements MultiTenantDataAdapter {
   ): Database['public']['Tables']['processing_jobs']['Insert'] {
     return {
       id: job.id,
-      storage_path: job.storage_path,
-      original_filename: job.original_filename,
+      storage_path: job.storage_path ?? null,
+      original_filename: job.original_filename ?? null,
       status: job.status,
-      processing_error: job.processing_error,
-      python_job_id: job.python_job_id,
+      processing_error: job.processing_error ?? null,
+      python_job_id: job.python_job_id ?? null,
       user_id: job.user_id,
-      organization_id: job.organization_id,
-      file_size_mb: job.file_size_mb,
-      duration_seconds: job.duration_seconds,
-      delete_after: job.delete_after,
+      file_size_mb: job.file_size_mb ?? null,
+      duration_seconds: job.duration_seconds ?? null,
+      delete_after: job.delete_after ?? null,
       created_at: job.created_at,
       updated_at: job.updated_at,
     };
