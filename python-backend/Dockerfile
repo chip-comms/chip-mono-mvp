@@ -23,10 +23,10 @@ RUN mkdir -p storage/uploads storage/temp
 
 # Set environment variables
 ENV PYTHONPATH=/app
-ENV PORT=8000
+ENV PORT=8080
 
-# Expose port
-EXPOSE 8000
+# Expose port (Cloud Run uses 8080 by default)
+EXPOSE 8080
 
-# Start command
-CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+# Start command - use $PORT environment variable
+CMD uvicorn app.main:app --host 0.0.0.0 --port $PORT
