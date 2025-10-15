@@ -110,6 +110,7 @@ supabase/
 ```
 
 **Key Principle:**
+
 - Frontend uploads files directly to Supabase Storage
 - Database trigger automatically calls Edge Function when job is created
 - Edge Function generates signed URL and calls Python backend
@@ -170,7 +171,7 @@ The database follows a simple single-tenant architecture:
      - Saves all results to `meeting_analysis` table
      - Updates job status to `completed` or `failed`
 
-3. **Analysis Components:**
+4. **Analysis Components:**
    - Summary (AI-generated overview)
    - Transcript with speaker labels and timestamps
    - Speaker statistics (talk time, word count, percentage)
@@ -183,24 +184,28 @@ The database follows a simple single-tenant architecture:
 The Python backend is deployed to Google Cloud Run with the following setup:
 
 **Deployment Script:** `python-backend/deploy.sh`
+
 - Builds Docker container using Cloud Build
 - Pushes to Artifact Registry
 - Deploys to Cloud Run with environment configuration
 - Configures secrets from Google Secret Manager
 
 **Secrets (Google Secret Manager):**
+
 - `supabase-url` - Supabase project URL
 - `supabase-service-role-key` - Supabase service role key (for database writes)
 - `gemini-api-key` - Google Gemini API key for AI analysis
 - `python-backend-api-key` - API key for authenticating Edge Function requests
 
 **Security:**
+
 - API key authentication via `APIKeyMiddleware` (python-backend/app/middleware/auth.py)
 - Only Edge Functions have the API key to call Python backend
 - Service is `--allow-unauthenticated` but protected by API key check
 - Health endpoint (`/api/health`) excluded from authentication
 
 **Resource Configuration:**
+
 - Memory: 2Gi
 - CPU: 2
 - Timeout: 300s (5 minutes)
@@ -208,6 +213,7 @@ The Python backend is deployed to Google Cloud Run with the following setup:
 - Max instances: 10
 
 **Deployment Commands:**
+
 ```bash
 cd python-backend
 ./deploy.sh  # Full deployment with interactive prompts
@@ -358,6 +364,7 @@ PYTHON_BACKEND_API_KEY=your_production_api_key
 6. Run `./db-ops.sh generate-types` to update TypeScript types
 
 **Important:**
+
 - NEVER run manual SQL statements in Supabase SQL Editor - always use migrations
 - Keep migration history in sync between local and remote
 - Use `supabase migration repair` if history gets out of sync
@@ -404,10 +411,12 @@ The Python backend is deployed to Google Cloud Run:
    - Create `.env.deploy` file from `.env.deploy.example`
 
 2. **First-time Setup:**
+
    ```bash
    cd python-backend
    ./deploy.sh
    ```
+
    This will:
    - Enable required GCP APIs
    - Create Artifact Registry repository
@@ -416,6 +425,7 @@ The Python backend is deployed to Google Cloud Run:
    - Deploy to Cloud Run
 
 3. **Subsequent Deployments:**
+
    ```bash
    cd python-backend
    ./deploy.sh  # Full rebuild and deploy
