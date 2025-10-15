@@ -33,14 +33,21 @@ class Settings(BaseSettings):
     # CORS
     cors_origins: str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
     
+    # Supabase Configuration
+    supabase_url: str = os.getenv("SUPABASE_URL", "")
+    supabase_secret_key: str = os.getenv("SUPABASE_SECRET_KEY", "")
+
     # AI Provider Configuration
     openai_api_key: str = os.getenv("OPENAI_API_KEY", "")
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
-    
+
+    # Hugging Face Token (for speaker diarization)
+    huggingface_token: str = os.getenv("HUGGINGFACE_TOKEN", "")
+
     # Preferred AI provider (auto, openai, gemini, anthropic)
     ai_provider: Literal["auto", "openai", "gemini", "anthropic"] = os.getenv(
-        "AI_PROVIDER", 
+        "AI_PROVIDER",
         "auto"
     )
     
