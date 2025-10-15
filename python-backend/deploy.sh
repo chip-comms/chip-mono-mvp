@@ -167,6 +167,10 @@ if [ -z "$GEMINI_API_KEY" ]; then
     warn "GEMINI_API_KEY not set in .env.deploy (you may skip if using OpenAI)"
 fi
 
+if [ -z "$HUGGINGFACE_TOKEN" ]; then
+    warn "HUGGINGFACE_TOKEN not set in .env.deploy (diarization will be disabled)"
+fi
+
 echo ""
 echo "Creating/updating secrets in Google Secret Manager..."
 
@@ -199,10 +203,21 @@ if [ ! -z "$GEMINI_API_KEY" ]; then
     fi
 fi
 
+# Hugging Face Token
+if [ ! -z "$HUGGINGFACE_TOKEN" ]; then
+    if gcloud secrets describe huggingface-token &>/dev/null; then
+        echo -n "$HUGGINGFACE_TOKEN" | gcloud secrets versions add huggingface-token --data-file=-
+        info "Updated secret 'huggingface-token'"
+    else
+        echo -n "$HUGGINGFACE_TOKEN" | gcloud secrets create huggingface-token --data-file=-
+        info "Created secret 'huggingface-token'"
+    fi
+fi
+
 # Grant secret access to Cloud Run service account
 echo ""
 echo "Granting secret access to Cloud Run service account..."
-for SECRET in supabase-url supabase-service-role-key gemini-api-key; do
+for SECRET in supabase-url supabase-service-role-key gemini-api-key huggingface-token; do
     if gcloud secrets describe $SECRET &>/dev/null; then
         gcloud secrets add-iam-policy-binding $SECRET \
           --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
@@ -266,7 +281,7 @@ gcloud run deploy meeting-intelligence-backend \
   --timeout 300s \
   --min-instances 0 \
   --max-instances 10 \
-  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest,API_KEY=python-backend-api-key:latest" \
+  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest,API_KEY=python-backend-api-key:latest,HUGGINGFACE_TOKEN=huggingface-token:latest" \
   --set-env-vars "AI_PROVIDER=gemini" \
   --quiet
 
