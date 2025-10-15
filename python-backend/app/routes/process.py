@@ -3,9 +3,11 @@ Process endpoint for handling video/audio processing jobs from Next.js frontend.
 """
 
 import os
+import sys
 import asyncio
 import tempfile
 import httpx
+import logging
 from pathlib import Path
 from typing import Dict, Any
 from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
@@ -14,6 +16,22 @@ from pydantic import BaseModel
 from app.services.supabase_client import SupabaseClient
 from app.services.audio.transcription import TranscriptionService
 from app.services.llm.llm_adapter import LLMAdapter
+
+# Configure logging to output to stdout with immediate flush
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.StreamHandler(sys.stdout)
+    ],
+    force=True
+)
+logger = logging.getLogger(__name__)
+# Force flush after every log message
+for handler in logger.handlers:
+    handler.setLevel(logging.INFO)
+    if hasattr(handler, 'setFormatter'):
+        handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
 
 router = APIRouter()
 
@@ -63,26 +81,31 @@ async def process_job_task(
         temp_dir = Path(tempfile.mkdtemp(prefix=f"job_{job_id}_"))
         temp_file = temp_dir / original_filename
 
-        print(f"[Job {job_id}] Downloading file from: {file_url[:50]}...")
+        logger.info(f"[Job {job_id}] Downloading file from: {file_url[:50]}...")
+        sys.stdout.flush()
 
         # Download file from signed URL
         await download_file(file_url, temp_file)
 
         file_size_mb = temp_file.stat().st_size / (1024 * 1024)
-        print(f"[Job {job_id}] Downloaded {file_size_mb:.2f} MB")
+        logger.info(f"[Job {job_id}] Downloaded {file_size_mb:.2f} MB")
+        sys.stdout.flush()
 
         # Step 1: Transcribe audio
-        print(f"[Job {job_id}] Starting transcription...")
+        logger.info(f"[Job {job_id}] Starting transcription...")
+        sys.stdout.flush()
         transcription_service = TranscriptionService()
         transcription_result = transcription_service.transcribe(temp_file)
 
         if not transcription_result or 'error' in transcription_result:
             raise Exception(f"Transcription failed: {transcription_result.get('error', 'Unknown error')}")
 
-        print(f"[Job {job_id}] Transcription complete. Segments: {len(transcription_result.get('segments', []))}")
+        logger.info(f"[Job {job_id}] Transcription complete. Segments: {len(transcription_result.get('segments', []))}")
+        sys.stdout.flush()
 
         # Step 2: Generate AI analysis
-        print(f"[Job {job_id}] Starting AI analysis...")
+        logger.info(f"[Job {job_id}] Starting AI analysis...")
+        sys.stdout.flush()
         llm_adapter = LLMAdapter()
 
         # Generate summary and insights from transcript
@@ -115,9 +138,12 @@ Provide your response in JSON format with keys: summary, key_topics (array), act
                 "effectiveness_score": 50
             }
 
-        print(f"[Job {job_id}] AI analysis complete")
+        logger.info(f"[Job {job_id}] AI analysis complete")
+        sys.stdout.flush()
 
         # Step 3: Calculate speaker statistics
+        logger.info(f"[Job {job_id}] Calculating speaker statistics...")
+        sys.stdout.flush()
         segments = transcription_result.get('segments', [])
         speaker_stats: Dict[str, Any] = {}
 
@@ -139,10 +165,12 @@ Provide your response in JSON format with keys: summary, key_topics (array), act
         for speaker, stats in speaker_stats.items():
             stats['percentage'] = (stats['total_time'] / total_time * 100) if total_time > 0 else 0
 
-        print(f"[Job {job_id}] Speaker stats calculated. Speakers: {len(speaker_stats)}")
+        logger.info(f"[Job {job_id}] Speaker stats calculated. Speakers: {len(speaker_stats)}")
+        sys.stdout.flush()
 
         # Step 4: Save results to database
-        print(f"[Job {job_id}] Saving analysis to database...")
+        logger.info(f"[Job {job_id}] Saving analysis to database...")
+        sys.stdout.flush()
 
         analysis_record = {
             'job_id': job_id,
@@ -159,20 +187,29 @@ Provide your response in JSON format with keys: summary, key_topics (array), act
         }
 
         await supabase.save_analysis_results(job_id, analysis_record)
+        logger.info(f"[Job {job_id}] Analysis saved to database")
+        sys.stdout.flush()
 
         # Update job status to completed
         await supabase.update_job_status(job_id, 'completed')
+        logger.info(f"[Job {job_id}] Job status updated to 'completed'")
+        sys.stdout.flush()
 
-        print(f"[Job {job_id}] Processing complete!")
+        logger.info(f"[Job {job_id}] ✅ PROCESSING COMPLETE!")
+        sys.stdout.flush()
 
     except Exception as e:
-        print(f"[Job {job_id}] Error during processing: {str(e)}")
+        logger.error(f"[Job {job_id}] ❌ ERROR during processing: {str(e)}")
+        sys.stdout.flush()
 
         # Update job status to failed
         try:
             await supabase.update_job_status(job_id, 'failed', str(e))
+            logger.info(f"[Job {job_id}] Job status updated to 'failed'")
+            sys.stdout.flush()
         except Exception as update_error:
-            print(f"[Job {job_id}] Failed to update error status: {str(update_error)}")
+            logger.error(f"[Job {job_id}] Failed to update error status: {str(update_error)}")
+            sys.stdout.flush()
 
     finally:
         # Cleanup temp file
@@ -181,9 +218,11 @@ Provide your response in JSON format with keys: summary, key_topics (array), act
                 temp_file.unlink()
                 if temp_file.parent.exists():
                     temp_file.parent.rmdir()
-                print(f"[Job {job_id}] Cleaned up temp files")
+                logger.info(f"[Job {job_id}] Cleaned up temp files")
+                sys.stdout.flush()
             except Exception as cleanup_error:
-                print(f"[Job {job_id}] Cleanup error: {str(cleanup_error)}")
+                logger.error(f"[Job {job_id}] Cleanup error: {str(cleanup_error)}")
+                sys.stdout.flush()
 
 
 @router.post("/process", response_model=ProcessJobResponse)
@@ -204,7 +243,8 @@ async def process_job(
     if not request.job_id or not request.file_url:
         raise HTTPException(status_code=400, detail="job_id and file_url are required")
 
-    print(f"Received processing request for job: {request.job_id}")
+    logger.info(f"📥 Received processing request for job: {request.job_id}")
+    sys.stdout.flush()
 
     # Generate Python job ID (for tracking within Python backend)
     python_job_id = f"py_{request.job_id}"
@@ -247,5 +287,6 @@ async def get_job_status(job_id: str) -> Dict[str, Any]:
     except HTTPException:
         raise
     except Exception as e:
-        print(f"Error fetching job status: {str(e)}")
+        logger.error(f"Error fetching job status: {str(e)}")
+        sys.stdout.flush()
         raise HTTPException(status_code=500, detail=str(e))

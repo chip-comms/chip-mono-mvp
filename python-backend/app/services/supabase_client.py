@@ -36,7 +36,7 @@ class SupabaseClient:
         data = {"status": status, "updated_at": "now()"}
         if error:
             data["processing_error"] = error
-            
+
         async with httpx.AsyncClient() as client:
             response = await client.patch(
                 f"{self.url}/rest/v1/processing_jobs?id=eq.{job_id}",
@@ -44,6 +44,10 @@ class SupabaseClient:
                 headers=self.headers
             )
             response.raise_for_status()
+            # Supabase returns 204 No Content for PATCH requests by default
+            # Only try to parse JSON if there's content
+            if response.status_code == 204 or not response.text:
+                return {"success": True}
             return response.json()
     
     async def save_analysis_results(self, job_id: str, results: Dict[str, Any]):
