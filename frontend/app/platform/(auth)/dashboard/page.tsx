@@ -1,6 +1,7 @@
 'use client';
 
 import FileUploadZone from '@/components/FileUploadZone';
+import RecordingsList from '@/components/RecordingsList';
 import { useState } from 'react';
 
 export default function DashboardPage() {
@@ -58,17 +59,8 @@ export default function DashboardPage() {
         />
       </div>
 
-      {/* Recent Meetings */}
-      <div className="bg-white rounded-lg shadow-sm p-8">
-        <h2 className="text-xl font-semibold text-gray-900 mb-4">
-          Recent Meetings
-        </h2>
-        <div className="text-center py-12 text-gray-500">
-          <div className="text-5xl mb-4">🎯</div>
-          <p className="text-lg mb-2">No meetings yet</p>
-          <p className="text-sm">Upload your first meeting to get started</p>
-        </div>
-      </div>
+      {/* Recordings List */}
+      <RecordingsList />
     </div>
   );
 }
