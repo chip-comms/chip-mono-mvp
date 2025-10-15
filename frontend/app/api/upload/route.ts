@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
       'MB)'
     );
     console.log('Content type:', file.type);
-    console.log('Supabase URL:', process.env.NEXT_PUBLIC_SUPABASE_URL);
 
     // Convert File to ArrayBuffer for upload
     const fileArrayBuffer = await file.arrayBuffer();

@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
+import { getSupabaseUrl } from '@/lib/config';
 
 export type JobStatus =
   | 'uploading'
@@ -84,10 +85,7 @@ export function useJobStatus(
 
     try {
       // Get Supabase URL from environment
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('NEXT_PUBLIC_SUPABASE_URL not configured');
-      }
+      const supabaseUrl = getSupabaseUrl();
 
       // Get auth token from Supabase client
       const { createClient } = await import('@/lib/supabase');
@@ -213,10 +211,7 @@ export function useProcessJob() {
 
     try {
       // Get Supabase URL from environment
-      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-      if (!supabaseUrl) {
-        throw new Error('NEXT_PUBLIC_SUPABASE_URL not configured');
-      }
+      const supabaseUrl = getSupabaseUrl();
 
       // Get auth token from Supabase client
       const { createClient } = await import('@/lib/supabase');
