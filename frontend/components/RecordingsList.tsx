@@ -16,6 +16,9 @@ interface Recording {
   status: string;
 }
 
+type SortField = 'filename' | 'fileType' | 'status' | 'uploadDate';
+type SortDirection = 'asc' | 'desc';
+
 export default function RecordingsList() {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -24,6 +27,8 @@ export default function RecordingsList() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
+  const [sortField, setSortField] = useState<SortField>('uploadDate');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
   const fetchRecordings = useCallback(async () => {
     setIsLoading(true);
@@ -88,6 +93,7 @@ export default function RecordingsList() {
       year: 'numeric',
       hour: '2-digit',
       minute: '2-digit',
+      timeZoneName: 'short',
     });
   };
 
@@ -173,6 +179,85 @@ export default function RecordingsList() {
     setShowDeleteModal(false);
   };
 
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      // Toggle direction if clicking the same field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Default to ascending for new field
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  const sortedRecordings = [...recordings].sort((a, b) => {
+    let aValue: string | number = a[sortField];
+    let bValue: string | number = b[sortField];
+
+    // Convert to lowercase for string comparisons
+    if (typeof aValue === 'string') aValue = aValue.toLowerCase();
+    if (typeof bValue === 'string') bValue = bValue.toLowerCase();
+
+    // For date sorting, use timestamps
+    if (sortField === 'uploadDate') {
+      aValue = new Date(a.uploadDate).getTime();
+      bValue = new Date(b.uploadDate).getTime();
+    }
+
+    if (aValue < bValue) return sortDirection === 'asc' ? -1 : 1;
+    if (aValue > bValue) return sortDirection === 'asc' ? 1 : -1;
+    return 0;
+  });
+
+  const SortIcon = ({ field }: { field: SortField }) => {
+    if (sortField !== field) {
+      return (
+        <svg
+          className="w-4 h-4 text-gray-400"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeWidth={2}
+            d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"
+          />
+        </svg>
+      );
+    }
+    return sortDirection === 'asc' ? (
+      <svg
+        className="w-4 h-4 text-blue-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 15l7-7 7 7"
+        />
+      </svg>
+    ) : (
+      <svg
+        className="w-4 h-4 text-blue-600"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke="currentColor"
+      >
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M19 9l-7 7-7-7"
+        />
+      </svg>
+    );
+  };
+
   const allSelected =
     recordings.length > 0 && selectedIds.size === recordings.length;
   const someSelected =
@@ -245,22 +330,46 @@ export default function RecordingsList() {
                     className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
                   />
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  File Name
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort('filename')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>File Name</span>
+                    <SortIcon field="filename" />
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Type
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort('fileType')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Type</span>
+                    <SortIcon field="fileType" />
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Status
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort('status')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Status</span>
+                    <SortIcon field="status" />
+                  </div>
                 </th>
-                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Upload Date
+                <th
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100 transition-colors"
+                  onClick={() => handleSort('uploadDate')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Upload Date</span>
+                    <SortIcon field="uploadDate" />
+                  </div>
                 </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
-              {recordings.map((recording) => (
+              {sortedRecordings.map((recording) => (
                 <tr
                   key={recording.id}
                   className={`hover:bg-gray-50 ${selectedIds.has(recording.id) ? 'bg-blue-50' : ''}`}
