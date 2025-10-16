@@ -21,6 +21,7 @@ temp/
 .env.local
 .env.deploy
 !.env.example
+!.env.local.example
 
 # IDEs
 .vscode/

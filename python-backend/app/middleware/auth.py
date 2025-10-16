@@ -3,7 +3,7 @@ Authentication middleware for API key validation.
 """
 
 import os
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
@@ -14,7 +14,12 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
     def __init__(self, app, excluded_paths: list[str] = None):
         super().__init__(app)
         self.api_key = os.getenv("API_KEY")
-        self.excluded_paths = excluded_paths or ["/api/health", "/docs", "/openapi.json", "/"]
+        self.excluded_paths = excluded_paths or [
+            "/api/health",
+            "/docs",
+            "/openapi.json",
+            "/",
+        ]
 
     async def dispatch(self, request: Request, call_next):
         # Skip authentication for excluded paths
@@ -32,27 +37,35 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
         if not auth_header:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Missing Authorization header"}
+                content={"detail": "Missing Authorization header"},
             )
 
         # Extract bearer token
         if not auth_header.startswith("Bearer "):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Invalid Authorization header format. Expected: Bearer <token>"}
+                content={
+                    "detail": "Invalid Authorization header format. Expected: Bearer <token>"
+                },
             )
 
         provided_key = auth_header.replace("Bearer ", "")
 
         # Validate API key
-        print(f"[AUTH] Provided key length: {len(provided_key)}, first 10: {provided_key[:10]}")
-        print(f"[AUTH] Expected key length: {len(self.api_key) if self.api_key else 0}, first 10: {self.api_key[:10] if self.api_key else 'None'}")
+        print(
+            f"[AUTH] Provided key length: {len(provided_key)}, first 10: {provided_key[:10]}"
+        )
+        expected_len = len(self.api_key) if self.api_key else 0
+        expected_preview = self.api_key[:10] if self.api_key else "None"
+        print(
+            f"[AUTH] Expected key length: {expected_len}, first 10: {expected_preview}"
+        )
         print(f"[AUTH] Keys match: {provided_key == self.api_key}")
 
         if provided_key != self.api_key:
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                content={"detail": "Invalid API key"}
+                content={"detail": "Invalid API key"},
             )
 
         # API key is valid, proceed with request

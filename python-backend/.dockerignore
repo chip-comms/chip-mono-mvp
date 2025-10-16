@@ -46,3 +46,7 @@ Thumbs.db
 # Documentation
 README.md
 docs/
+
+# Docker Compose (local dev only)
+docker-compose.yml
+docker-compose.*.yml

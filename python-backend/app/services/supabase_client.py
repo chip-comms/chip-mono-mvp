@@ -13,61 +13,68 @@ class SupabaseClient:
         self.service_key = os.getenv("SUPABASE_SECRET_KEY")
 
         if not self.url or not self.service_key:
-            raise ValueError("SUPABASE_URL and SUPABASE_SECRET_KEY must be set in environment")
-        
+            raise ValueError(
+                "SUPABASE_URL and SUPABASE_SECRET_KEY must be set in environment"
+            )
+
         self.headers = {
             "apikey": self.service_key,
             "Authorization": f"Bearer {self.service_key}",
-            "Content-Type": "application/json"
+            "Content-Type": "application/json",
         }
-    
+
     async def download_file(self, file_path: str) -> bytes:
         """Download file from Supabase Storage"""
         async with httpx.AsyncClient(timeout=300.0) as client:
             response = await client.get(
                 f"{self.url}/storage/v1/object/meeting-recordings/{file_path}",
-                headers=self.headers
+                headers=self.headers,
             )
             response.raise_for_status()
             return response.content
-    
-    async def update_job_status(self, job_id: str, status: str, error: Optional[str] = None):
+
+    async def update_job_status(
+        self, job_id: str, status: str, error: Optional[str] = None
+    ):
         """Update processing job status"""
         data = {"status": status, "updated_at": "now()"}
         if error:
             data["processing_error"] = error
-            
+
         async with httpx.AsyncClient() as client:
             response = await client.patch(
                 f"{self.url}/rest/v1/processing_jobs?id=eq.{job_id}",
                 json=data,
-                headers=self.headers
+                headers=self.headers,
             )
             response.raise_for_status()
+            # Supabase returns 204 No Content for PATCH requests by default
+            # Only try to parse JSON if there's content
+            if response.status_code == 204 or not response.text:
+                return {"success": True}
             return response.json()
-    
+
     async def save_analysis_results(self, job_id: str, results: Dict[str, Any]):
         """Save analysis results to Supabase"""
-        data = {
-            "job_id": job_id,
-            **results
-        }
-        
+        data = {"job_id": job_id, **results}
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
-                f"{self.url}/rest/v1/meeting_analysis",
-                json=data,
-                headers=self.headers
+                f"{self.url}/rest/v1/meeting_analysis", json=data, headers=self.headers
             )
             response.raise_for_status()
+            # Supabase returns 201 Created with empty body or Location header
+            # Only try to parse JSON if there's content
+            if response.status_code == 201 or not response.text:
+                return {"success": True}
             return response.json()
-    
+
     async def get_job_status(self, job_id: str) -> Dict[str, Any]:
         """Get job status and details"""
         async with httpx.AsyncClient() as client:
             response = await client.get(
                 f"{self.url}/rest/v1/processing_jobs?id=eq.{job_id}",
-                headers=self.headers
+                headers=self.headers,
             )
             response.raise_for_status()
             data = response.json()
