@@ -97,7 +97,7 @@ This project separates concerns across three layers:
 3. **Python Backend (FastAPI)** - CPU/GPU-intensive processing
    - Location: `python-backend/`
    - Deployed to: Google Cloud Run (serverless containers)
-   - Handles: Video/audio extraction, transcription (WhisperX), speaker diarization (pyannote.audio), AI analysis
+   - Handles: Audio transcription with AssemblyAI API, speaker diarization, AI analysis
    - Secured with API key authentication (only Edge Functions can call it)
    - Exposes REST API at Cloud Run URL
 
@@ -164,10 +164,11 @@ The database follows a simple single-tenant architecture:
      - Authentication via `Authorization: Bearer <api_key>` header
    - **Step 4:** Python backend (Cloud Run) processes in background:
      - Downloads file from signed URL
-     - Extracts audio and performs transcription (WhisperX)
-     - Performs speaker diarization (pyannote.audio)
+     - Performs transcription + speaker diarization via AssemblyAI API
      - Generates AI analysis (summary, insights, metrics) using Gemini
-     - Calculates speaker statistics
+     - Calculates speaker statistics (talk time, word count, percentages)
+     - Calculates response latency (gaps between speaker turns)
+     - Detects interruptions (overlapping speech)
      - Saves all results to `meeting_analysis` table
      - Updates job status to `completed` or `failed`
 
@@ -195,6 +196,7 @@ The Python backend is deployed to Google Cloud Run with the following setup:
 - `supabase-url` - Supabase project URL
 - `supabase-service-role-key` - Supabase service role key (for database writes)
 - `gemini-api-key` - Google Gemini API key for AI analysis
+- `assemblyai-api-key` - AssemblyAI API key for transcription and diarization
 - `python-backend-api-key` - API key for authenticating Edge Function requests
 
 **Security:**
@@ -282,13 +284,10 @@ gcloud run deploy meeting-intelligence-backend \
   - `POST /api/process` - Main processing endpoint (called by Edge Functions)
   - `GET /api/process/status/{job_id}` - Get job status
 - **Key Dependencies:** (see `python-backend/requirements.txt`)
-  - `whisperx>=3.1.0` - Advanced speech transcription with word-level timestamps
-  - `pyannote.audio>=3.0.0` - Speaker diarization (who spoke when)
-  - `faster-whisper>=0.9.0` - Optimized Whisper implementation
-  - `ffmpeg-python>=0.2.0` - Video/audio processing
-  - `opencv-python>=4.9.0` - Video analysis
+  - `assemblyai>=0.25.0` - Audio transcription and speaker diarization API
+  - `supabase>=2.3.0` - Supabase client for database operations
   - `fastapi>=0.109.0` - REST API framework
-  - `google-generativeai>=0.3.0` - Google Gemini API
+  - `google-generativeai>=0.3.0` - Google Gemini API for AI analysis
 
 **Processing Flow (Background Task):**
 
@@ -296,15 +295,22 @@ gcloud run deploy meeting-intelligence-backend \
 2. Python backend starts background task and returns immediately
 3. Background task:
    - Downloads file from Supabase Storage (via signed URL)
-   - Extracts audio and performs transcription (WhisperX)
-   - Performs speaker diarization (pyannote.audio)
+   - Performs transcription + speaker diarization via AssemblyAI API
    - Generates AI analysis using Gemini (summary, topics, action items, effectiveness score)
    - Calculates speaker statistics (talk time, word count, percentages)
+   - Calculates response latency (gaps between speaker turns)
+   - Detects interruptions (overlapping speech)
    - Saves results to `meeting_analysis` table
    - Updates job status to `completed` or `failed`
    - Cleans up temporary files
 
-**Note:** The build process takes 8-10 minutes due to large ML dependencies (~2GB for PyTorch, WhisperX, etc.). Consider using Docker layer caching or pre-built base images for faster iteration.
+**Transcription Provider Architecture:**
+
+The backend uses a provider pattern for transcription (similar to LLM adapter):
+- `AssemblyAIProvider` - Production API (transcription + diarization in one call)
+- `MockProvider` - Local development without API key
+
+Provider selection via `TRANSCRIPTION_PROVIDER` env var (`assemblyai` or `mock`). Falls back to mock if AssemblyAI API key not provided.
 
 ## Environment Setup
 
@@ -323,6 +329,11 @@ SUPABASE_URL=your_supabase_project_url
 SUPABASE_SECRET_KEY=your_service_role_key
 GEMINI_API_KEY=your_gemini_key
 AI_PROVIDER=gemini
+
+# Transcription Provider
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
+TRANSCRIPTION_PROVIDER=assemblyai  # or 'mock' for local dev without API key
+
 CORS_ORIGINS=http://localhost:3000
 API_KEY=your_local_api_key  # Optional for local dev
 ```
@@ -334,6 +345,10 @@ SUPABASE_URL=your_supabase_project_url
 SUPABASE_SECRET_KEY=your_service_role_key
 GEMINI_API_KEY=your_gemini_key
 API_KEY=your_production_api_key
+
+# Transcription Provider
+ASSEMBLYAI_API_KEY=your_assemblyai_api_key_here
+TRANSCRIPTION_PROVIDER=assemblyai
 ```
 
 **Note:** Cloud Run deployment uses Google Secret Manager. Secrets are configured via `deploy.sh` script and injected as environment variables at runtime.

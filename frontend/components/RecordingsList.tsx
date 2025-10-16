@@ -19,7 +19,12 @@ interface Recording {
 type SortField = 'filename' | 'fileType' | 'status' | 'uploadDate';
 type SortDirection = 'asc' | 'desc';
 
-export default function RecordingsList() {
+interface RecordingsListProps {
+  onViewAnalysis: (data: { jobId: string; filename: string }) => void;
+  refreshTrigger?: number;
+}
+
+export default function RecordingsList({ onViewAnalysis, refreshTrigger }: RecordingsListProps) {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);
@@ -72,7 +77,7 @@ export default function RecordingsList() {
 
   useEffect(() => {
     fetchRecordings();
-  }, [fetchRecordings]);
+  }, [fetchRecordings, refreshTrigger]);
 
   const extractFilenameFromPath = (path: string | null): string => {
     if (!path) return 'Unknown';
@@ -366,6 +371,9 @@ export default function RecordingsList() {
                     <SortIcon field="uploadDate" />
                   </div>
                 </th>
+                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Meeting Analysis
+                </th>
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-200">
@@ -413,6 +421,42 @@ export default function RecordingsList() {
                     <div className="text-sm text-gray-500">
                       {formatDate(recording.uploadDate)}
                     </div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    {recording.status === 'completed' ? (
+                      <button
+                        onClick={() =>
+                          onViewAnalysis({
+                            jobId: recording.id,
+                            filename: recording.filename,
+                          })
+                        }
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors"
+                      >
+                        <svg
+                          className="w-4 h-4 mr-1.5"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                        >
+                          <path
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            strokeWidth={2}
+                            d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                          />
+                        </svg>
+                        View Analysis
+                      </button>
+                    ) : (
+                      <span className="text-xs text-gray-400 italic">
+                        {recording.status === 'processing'
+                          ? 'Processing...'
+                          : recording.status === 'failed'
+                            ? 'Failed'
+                            : 'Not available'}
+                      </span>
+                    )}
                   </td>
                 </tr>
               ))}
