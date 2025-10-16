@@ -265,9 +265,7 @@ Return ONLY a JSON array of 2-3 tip strings. Example:
             return tips[:3]  # Limit to 3 tips
 
         except Exception as error:
-            logger.error(
-                f"OpenAI speaker tips error for {speaker_label}: {error}"
-            )
+            logger.error(f"OpenAI speaker tips error for {speaker_label}: {error}")
             # Return generic fallback tips
             return [
                 "Focus on balanced participation in meetings.",

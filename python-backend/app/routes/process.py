@@ -64,7 +64,7 @@ async def download_file(url: str, destination: Path) -> None:
 
 
 def calculate_per_speaker_response_latency(
-    segments: list[Dict[str, Any]]
+    segments: list[Dict[str, Any]],
 ) -> Dict[str, Dict[str, Any]]:
     """
     Calculate response latency metrics per speaker.
@@ -110,7 +110,7 @@ def calculate_per_speaker_response_latency(
 
         average_gap = sum(gaps) / len(gaps)
         quick_responses = [g for g in gaps if g < 1.0]
-        quick_percentage = (len(quick_responses) / len(gaps) * 100)
+        quick_percentage = len(quick_responses) / len(gaps) * 100
 
         result[speaker] = {
             "average_seconds": round(average_gap, 2),
@@ -123,7 +123,7 @@ def calculate_per_speaker_response_latency(
 
 
 def calculate_per_speaker_interruptions(
-    segments: list[Dict[str, Any]]
+    segments: list[Dict[str, Any]],
 ) -> Dict[str, Dict[str, Any]]:
     """
     Calculate interruption metrics per speaker.
@@ -163,7 +163,7 @@ def calculate_per_speaker_interruptions(
         start1 = seg1.get("start", 0)
         end1 = seg1.get("end", 0)
 
-        for seg2 in segments[i + 1:]:
+        for seg2 in segments[i + 1 :]:
             speaker2 = seg2.get("speaker")
             start2 = seg2.get("start", 0)
             end2 = seg2.get("end", 0)
@@ -316,9 +316,7 @@ async def process_job_task(
         sys.stdout.flush()
 
         # Step 4: Generate per-speaker communication tips using LLM
-        logger.info(
-            f"[Job {job_id}] Generating communication tips for each speaker..."
-        )
+        logger.info(f"[Job {job_id}] Generating communication tips for each speaker...")
         sys.stdout.flush()
 
         llm_adapter = LLMAdapter()
@@ -340,9 +338,7 @@ async def process_job_task(
                     meeting_duration_minutes=meeting_duration_minutes,
                 )
                 stats["communication_tips"] = tips
-                logger.info(
-                    f"[Job {job_id}] Generated {len(tips)} tips for {speaker}"
-                )
+                logger.info(f"[Job {job_id}] Generated {len(tips)} tips for {speaker}")
             except Exception as tip_error:
                 logger.warning(
                     f"[Job {job_id}] Failed to generate tips for {speaker}: "
