@@ -8,7 +8,9 @@
  * Get the current environment (local or production)
  */
 export function getEnvironment(): 'local' | 'production' {
-  return (process.env.NEXT_PUBLIC_SUPABASE_ENV as 'local' | 'production') || 'local';
+  return (
+    (process.env.NEXT_PUBLIC_SUPABASE_ENV as 'local' | 'production') || 'local'
+  );
 }
 
 /**

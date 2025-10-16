@@ -7,8 +7,5 @@ import { getSupabaseUrl, getSupabaseAnonKey } from '@/lib/config';
  * @returns Supabase browser client
  */
 export function createClient() {
-  return createBrowserClient<Database>(
-    getSupabaseUrl(),
-    getSupabaseAnonKey()
-  );
+  return createBrowserClient<Database>(getSupabaseUrl(), getSupabaseAnonKey());
 }

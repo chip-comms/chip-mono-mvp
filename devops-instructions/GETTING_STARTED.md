@@ -25,9 +25,11 @@ Before you begin, ensure you have the following installed:
   - Used for frontend and build tools
 
 - **Supabase CLI** (required) - Install via:
+
   ```bash
   npm install -g supabase
   ```
+
   - Check installation: `supabase --version`
 
 - **Git** (required) - [Download here](https://git-scm.com/)
@@ -48,6 +50,7 @@ chip-mono-mvp/
 ```
 
 **Data Flow:**
+
 1. Frontend uploads files to Supabase Storage
 2. Database trigger calls Edge Function
 3. Edge Function calls Python Backend (local or production)
@@ -125,6 +128,7 @@ npm run dev
 **Frontend will be available at:** http://localhost:3000
 
 **Environment Variables:**
+
 - `NEXT_PUBLIC_SUPABASE_URL` - Local Supabase API URL
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Anonymous/public API key
 
@@ -150,12 +154,14 @@ Supabase provides the database, authentication, storage, and edge functions.
 **Access Supabase Studio:** http://localhost:54323
 
 **Get your local API keys:**
+
 1. Open Supabase Studio (http://localhost:54323)
 2. Go to Settings → API
 3. Copy the `anon` key and `service_role` key
 4. Use the `anon` key in your frontend `.env.local`
 
 **Database Operations:**
+
 ```bash
 # View service status
 ./db-ops.sh status
@@ -191,6 +197,7 @@ cd ../..
 ```
 
 **Start Edge Functions locally:**
+
 ```bash
 cd supabase
 supabase functions serve
@@ -211,6 +218,7 @@ cp .env.local.example .env.local
 ```
 
 **Edit `python-backend/.env.local`:**
+
 ```bash
 # Supabase Configuration (use local Supabase)
 SUPABASE_URL=http://host.docker.internal:54321
@@ -230,11 +238,13 @@ API_KEY=local-dev-key
 ```
 
 **Start the Python backend:**
+
 ```bash
 ./start-local.sh
 ```
 
 This will:
+
 1. Build a Docker image with all ML dependencies (~2GB, takes 5-10 minutes first time)
 2. Start the container with hot-reloading enabled
 3. Mount your source code for live updates
@@ -242,23 +252,27 @@ This will:
 **Python Backend will be available at:** http://localhost:8000
 
 **Check health:**
+
 ```bash
 curl http://localhost:8000/api/health
 ```
 
 **View logs:**
+
 ```bash
 cd python-backend
 docker-compose logs -f
 ```
 
 **Stop the backend:**
+
 ```bash
 cd python-backend
 docker-compose down
 ```
 
 **Rebuild after dependency changes:**
+
 ```bash
 cd python-backend
 docker-compose build --no-cache
@@ -292,11 +306,13 @@ docker-compose up -d
 ### Supabase Credentials (Shared Dev Instance)
 
 **For local development:**
+
 - URL: `http://localhost:54321` (from local Supabase)
 - Anon Key: Get from http://localhost:54323 (Studio) → Settings → API
 - Service Role Key: Get from http://localhost:54323 (Studio) → Settings → API
 
 **For production/staging:**
+
 - Ask team lead for shared development instance credentials
 
 ## Testing Your Setup
@@ -337,18 +353,21 @@ curl http://localhost:54321
 ### 3. Monitor Processing
 
 **Check Python backend logs:**
+
 ```bash
 cd python-backend
 docker-compose logs -f
 ```
 
 **Check Edge Function logs:**
+
 ```bash
 cd supabase
 supabase functions logs
 ```
 
 **Check database:**
+
 1. Open Supabase Studio: http://localhost:54323
 2. Go to "Table Editor"
 3. View `processing_jobs` table (check status)
@@ -359,12 +378,14 @@ supabase functions logs
 ### Docker Issues
 
 **Problem:** `docker: command not found`
+
 ```bash
 # Solution: Install Docker Desktop
 # Download from: https://www.docker.com/products/docker-desktop/
 ```
 
 **Problem:** `Cannot connect to the Docker daemon`
+
 ```bash
 # Solution: Start Docker Desktop application
 # On Mac: Open Docker from Applications
@@ -372,6 +393,7 @@ supabase functions logs
 ```
 
 **Problem:** Port conflicts (port already in use)
+
 ```bash
 # Check what's using the port
 lsof -i :3000  # Frontend
@@ -384,6 +406,7 @@ lsof -i :54321 # Supabase API
 ### Supabase Issues
 
 **Problem:** `supabase: command not found`
+
 ```bash
 # Solution: Install Supabase CLI
 npm install -g supabase
@@ -393,6 +416,7 @@ npx supabase --version
 ```
 
 **Problem:** Supabase won't start
+
 ```bash
 # Make sure Docker is running
 docker ps
@@ -406,6 +430,7 @@ docker ps
 ```
 
 **Problem:** Database migration errors
+
 ```bash
 # Reset local database (caution: deletes all data)
 ./db-ops.sh reset
@@ -419,6 +444,7 @@ cd ..
 ### Python Backend Issues
 
 **Problem:** Docker build fails
+
 ```bash
 # Clean rebuild
 cd python-backend
@@ -428,6 +454,7 @@ docker-compose up -d
 ```
 
 **Problem:** Module import errors
+
 ```bash
 # Check if code is mounted correctly
 cd python-backend
@@ -438,6 +465,7 @@ docker-compose restart
 ```
 
 **Problem:** API keys not working
+
 ```bash
 # Check environment variables are loaded
 cd python-backend
@@ -448,6 +476,7 @@ cat .env.local
 ```
 
 **Problem:** "Could not connect to Supabase"
+
 ```bash
 # Use host.docker.internal instead of localhost
 # In .env.local:
@@ -460,6 +489,7 @@ docker-compose restart
 ### Frontend Issues
 
 **Problem:** `npm install` fails
+
 ```bash
 # Clear cache and reinstall
 cd frontend
@@ -468,6 +498,7 @@ npm install
 ```
 
 **Problem:** "Supabase client error"
+
 ```bash
 # Check environment variables
 cat frontend/.env.local
@@ -480,6 +511,7 @@ open http://localhost:54323
 ```
 
 **Problem:** Hot reload not working
+
 ```bash
 # Restart dev server
 cd frontend
@@ -489,6 +521,7 @@ npm run dev
 ### General Issues
 
 **Problem:** "Out of memory" errors
+
 ```bash
 # Increase Docker memory limit
 # Docker Desktop → Settings → Resources → Memory
@@ -496,12 +529,14 @@ npm run dev
 ```
 
 **Problem:** Slow performance on Mac
+
 ```bash
 # Use Docker's VirtioFS
 # Docker Desktop → Settings → General → Enable VirtioFS
 ```
 
 **Problem:** Need to clear everything and start fresh
+
 ```bash
 # Stop all services
 ./db-ops.sh stop

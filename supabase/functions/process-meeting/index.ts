@@ -64,11 +64,18 @@ serve(async (req) => {
     // so Python backend Docker container can access local Supabase
     let signedUrl = signedUrlData.signedUrl;
     if (signedUrl.includes('kong:8000')) {
-      signedUrl = signedUrl.replace('http://kong:8000', 'http://host.docker.internal:54321');
-      console.log(`[process-meeting] Converted signed URL for local development`);
+      signedUrl = signedUrl.replace(
+        'http://kong:8000',
+        'http://host.docker.internal:54321'
+      );
+      console.log(
+        `[process-meeting] Converted signed URL for local development`
+      );
     }
 
-    console.log(`[process-meeting] Signed URL generated: ${signedUrl.substring(0, 80)}...`);
+    console.log(
+      `[process-meeting] Signed URL generated: ${signedUrl.substring(0, 80)}...`
+    );
 
     // Update job status to processing
     const { error: updateError } = await supabase

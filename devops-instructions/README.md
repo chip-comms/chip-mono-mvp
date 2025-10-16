@@ -19,6 +19,7 @@ This directory contains scripts and documentation for setting up and running the
 ```
 
 This automated script will:
+
 - ✅ Check all prerequisites (Docker, Node.js, Supabase CLI)
 - ✅ Verify environment files exist
 - ✅ Start Supabase services
@@ -27,6 +28,7 @@ This automated script will:
 - ✅ Display all service URLs and helpful commands
 
 **What it does:**
+
 1. Validates Docker is running
 2. Checks Node.js and Supabase CLI are installed
 3. Ensures dependencies are installed
@@ -36,6 +38,7 @@ This automated script will:
 7. Opens frontend in new terminal (`npm run dev`)
 
 **Services started:**
+
 - Frontend: http://localhost:3000
 - Python Backend: http://localhost:8000
 - Supabase API: http://localhost:54321
@@ -48,6 +51,7 @@ This automated script will:
 ```
 
 This script will:
+
 - ✅ Stop Python backend container
 - ✅ Stop Supabase services
 - ✅ Show instructions for stopping frontend
@@ -65,17 +69,20 @@ Before running the scripts, ensure you have:
 ## 🔑 First-Time Setup
 
 1. **Clone the repository**
+
    ```bash
    git clone <repo-url>
    cd chip-mono-mvp
    ```
 
 2. **Install dependencies**
+
    ```bash
    npm run install:all
    ```
 
 3. **Configure environment files**
+
    ```bash
    # Copy templates
    cp frontend/.env.local.example frontend/.env.local
