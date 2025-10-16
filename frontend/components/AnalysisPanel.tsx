@@ -147,8 +147,8 @@ export default function AnalysisPanel({
           {/* Tabs */}
           <div className="flex space-x-4">
             {[
-              { id: 'transcript', label: 'Transcript' },
               { id: 'speakers', label: 'Speakers & Metrics' },
+              { id: 'transcript', label: 'Transcript' },
             ].map((tab) => (
               <button
                 key={tab.id}
