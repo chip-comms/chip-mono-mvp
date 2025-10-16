@@ -27,10 +27,7 @@ class SecondaryMetricsService:
     """
 
     def calculate_clarity_score(
-        self,
-        speech_pace: float,
-        filler_rate: float,
-        pause_metrics: Dict
+        self, speech_pace: float, filler_rate: float, pause_metrics: Dict
     ) -> Dict[str, Any]:
         """
         Calculate clarity score (0-100).
@@ -58,10 +55,7 @@ class SecondaryMetricsService:
         raise NotImplementedError("Clarity score (Python version) not yet implemented")
 
     def calculate_empathy_index(
-        self,
-        response_latency: float,
-        vocal_tone: Dict,
-        eye_contact: float
+        self, response_latency: float, vocal_tone: Dict, eye_contact: float
     ) -> Dict[str, Any]:
         """
         Calculate empathy index (0-100).
@@ -90,7 +84,7 @@ class SecondaryMetricsService:
         pitch_stability: float,
         filler_frequency: float,
         pace_consistency: float,
-        energy_level: float
+        energy_level: float,
     ) -> Dict[str, Any]:
         """
         Calculate confidence index (0-100).
@@ -116,10 +110,7 @@ class SecondaryMetricsService:
         raise NotImplementedError("Confidence index not yet implemented")
 
     def calculate_collaboration_ratio(
-        self,
-        questions_asked: int,
-        interruptions: Dict,
-        turn_taking: Dict
+        self, questions_asked: int, interruptions: Dict, turn_taking: Dict
     ) -> Dict[str, Any]:
         """
         Calculate collaboration ratio (0-100).
@@ -148,7 +139,7 @@ class SecondaryMetricsService:
         vocal_energy: float,
         talk_ratio: float,
         eye_contact: float,
-        response_pattern: Dict
+        response_pattern: Dict,
     ) -> Dict[str, Any]:
         """
         Calculate engagement index (0-100).
@@ -178,7 +169,7 @@ class SecondaryMetricsService:
         speaking_share: float,
         topic_initiation: int,
         response_patterns: Dict,
-        leadership_indicators: Dict
+        leadership_indicators: Dict,
     ) -> Dict[str, Any]:
         """
         Calculate influence score (0-100).
@@ -204,9 +195,7 @@ class SecondaryMetricsService:
         raise NotImplementedError("Influence score not yet implemented")
 
     def calculate_all_secondary_metrics(
-        self,
-        primary_metrics: Dict[str, Any],
-        transcription: str
+        self, primary_metrics: Dict[str, Any], transcription: str
     ) -> Dict[str, Any]:
         """
         Calculate all secondary metrics.

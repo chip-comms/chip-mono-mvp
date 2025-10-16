@@ -47,11 +47,7 @@ class EyeTrackingService:
         # )
         raise NotImplementedError("Eye tracking model not yet loaded")
 
-    def estimate_gaze(
-        self,
-        frame: Any,
-        face_landmarks: Dict
-    ) -> Dict[str, Any]:
+    def estimate_gaze(self, frame: Any, face_landmarks: Dict) -> Dict[str, Any]:
         """
         Estimate gaze direction from facial landmarks.
 
@@ -77,9 +73,7 @@ class EyeTrackingService:
         raise NotImplementedError("Gaze estimation not yet implemented")
 
     def detect_eye_contact(
-        self,
-        video_path: Path,
-        sample_rate: int = 5
+        self, video_path: Path, sample_rate: int = 5
     ) -> Dict[str, Any]:
         """
         Detect eye contact throughout video.
@@ -111,10 +105,7 @@ class EyeTrackingService:
         #   - Compute statistics
         raise NotImplementedError("Eye contact detection not yet implemented")
 
-    def detect_blinks(
-        self,
-        video_path: Path
-    ) -> List[float]:
+    def detect_blinks(self, video_path: Path) -> List[float]:
         """
         Detect eye blinks in video.
 
@@ -131,10 +122,7 @@ class EyeTrackingService:
         raise NotImplementedError("Blink detection not yet implemented")
 
     def calculate_attention_score(
-        self,
-        eye_contact_data: Dict,
-        blink_data: List[float],
-        duration: float
+        self, eye_contact_data: Dict, blink_data: List[float], duration: float
     ) -> float:
         """
         Calculate overall attention score.

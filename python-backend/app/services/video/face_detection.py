@@ -52,10 +52,7 @@ class FaceDetectionService:
         # self.landmark_detector = mp.solutions.face_mesh.FaceMesh()
         raise NotImplementedError("Face detection model not yet loaded")
 
-    def detect_faces_in_frame(
-        self,
-        frame: Any  # numpy array
-    ) -> List[Dict[str, Any]]:
+    def detect_faces_in_frame(self, frame: Any) -> List[Dict[str, Any]]:  # numpy array
         """
         Detect faces in a single frame.
 
@@ -92,9 +89,7 @@ class FaceDetectionService:
         raise NotImplementedError("Face detection not yet implemented")
 
     def detect_faces_in_video(
-        self,
-        video_path: Path,
-        sample_rate: int = 5  # FPS to sample
+        self, video_path: Path, sample_rate: int = 5  # FPS to sample
     ) -> List[Dict[str, Any]]:
         """
         Detect faces throughout video.
@@ -140,10 +135,7 @@ class FaceDetectionService:
         # return detections
         raise NotImplementedError("Video face detection not yet implemented")
 
-    def calculate_face_metrics(
-        self,
-        detections: List[Dict]
-    ) -> Dict[str, Any]:
+    def calculate_face_metrics(self, detections: List[Dict]) -> Dict[str, Any]:
         """
         Calculate metrics from face detections.
 

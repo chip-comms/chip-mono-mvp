@@ -12,6 +12,7 @@ from typing import Dict, Any
 import tempfile
 import os
 from pathlib import Path
+
 # import ffmpeg  # TODO (CHI-22): Re-enable for real ML pipeline
 
 # Import existing services
@@ -27,7 +28,9 @@ class AnalysisMeetingRequest(BaseModel):
 
 
 @router.post("/analyze-meeting")
-async def analyze_meeting(request: AnalysisMeetingRequest, background_tasks: BackgroundTasks):
+async def analyze_meeting(
+    request: AnalysisMeetingRequest, background_tasks: BackgroundTasks
+):
     """Complete meeting analysis pipeline matching the sequence diagram."""
 
     # Add the actual processing to background tasks for immediate response
@@ -47,7 +50,7 @@ async def process_meeting_analysis(video_url: str, job_id: str):
         video_content = await supabase.download_file(video_url)
 
         # Save video to temp file
-        temp_video = tempfile.NamedTemporaryFile(delete=False, suffix='.mp4')
+        temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=".mp4")
         temp_video.write(video_content)
         temp_video.close()
         temp_files.append(temp_video.name)
@@ -56,7 +59,7 @@ async def process_meeting_analysis(video_url: str, job_id: str):
         # Step 2: Extract audio from video (reuse existing functionality)
         # TODO (CHI-22): Re-enable audio extraction for real ML pipeline
         # For now, mock transcription service doesn't actually process audio
-        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
+        temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix=".wav")
         temp_audio.close()
         temp_files.append(temp_audio.name)
 
@@ -99,7 +102,7 @@ async def process_meeting_analysis(video_url: str, job_id: str):
             "transcript": transcript_result,
             "video_metrics": video_metrics,
             "communication_metrics": communication_metrics,
-            **llm_insights  # Includes summary, action_items, key_topics, sentiment
+            **llm_insights,  # Includes summary, action_items, key_topics, sentiment
         }
 
         # Step 8: Save results back to Supabase
@@ -123,7 +126,9 @@ async def process_meeting_analysis(video_url: str, job_id: str):
                 if os.path.exists(temp_file):
                     os.unlink(temp_file)
             except Exception as cleanup_error:
-                print(f"[{job_id}] Warning: Failed to cleanup {temp_file}: {cleanup_error}")
+                print(
+                    f"[{job_id}] Warning: Failed to cleanup {temp_file}: {cleanup_error}"
+                )
 
 
 async def analyze_video_content(video_path: str) -> Dict[str, Any]:
@@ -138,60 +143,68 @@ async def analyze_video_content(video_path: str) -> Dict[str, Any]:
         "face_detection_confidence": 0.92,
         "gaze_analysis": {"focused": 0.68, "distracted": 0.32},
         "speaker_visibility": 0.85,
-        "video_quality_score": 0.88
+        "video_quality_score": 0.88,
     }
 
 
-def calculate_communication_metrics(transcript_result: Dict[str, Any]) -> Dict[str, Any]:
+def calculate_communication_metrics(
+    transcript_result: Dict[str, Any],
+) -> Dict[str, Any]:
     """
     Calculate communication metrics from transcript.
     This implements logic similar to what was in supabase-backend/lib/ai/metrics.ts
     """
 
     # Get segments and calculate basic metrics
-    segments = transcript_result.get('segments', [])
+    segments = transcript_result.get("segments", [])
     if not segments:
         return {
             "talk_time_percentage": 0,
             "interruptions": 0,
             "average_response_delay": 0,
-            "speaker_breakdown": []
+            "speaker_breakdown": [],
         }
 
     # Group segments by speaker
     speaker_stats = {}
-    total_duration = transcript_result.get('duration', 0)
+    total_duration = transcript_result.get("duration", 0)
 
     for segment in segments:
-        speaker = segment.get('speaker', 'Unknown')
-        duration = segment.get('end', 0) - segment.get('start', 0)
-        word_count = len(segment.get('text', '').split())
+        speaker = segment.get("speaker", "Unknown")
+        duration = segment.get("end", 0) - segment.get("start", 0)
+        word_count = len(segment.get("text", "").split())
 
         if speaker not in speaker_stats:
             speaker_stats[speaker] = {
-                'duration': 0,
-                'word_count': 0,
-                'segment_count': 0
+                "duration": 0,
+                "word_count": 0,
+                "segment_count": 0,
             }
 
-        speaker_stats[speaker]['duration'] += duration
-        speaker_stats[speaker]['word_count'] += word_count
-        speaker_stats[speaker]['segment_count'] += 1
+        speaker_stats[speaker]["duration"] += duration
+        speaker_stats[speaker]["word_count"] += word_count
+        speaker_stats[speaker]["segment_count"] += 1
 
     # Calculate speaker breakdown
     speaker_breakdown = []
     for speaker, stats in speaker_stats.items():
-        percentage = (stats['duration'] / total_duration) if total_duration > 0 else 0
-        speaker_breakdown.append({
-            "speaker": speaker,
-            "duration": stats['duration'],
-            "word_count": stats['word_count'],
-            "percentage": percentage
-        })
+        percentage = (stats["duration"] / total_duration) if total_duration > 0 else 0
+        speaker_breakdown.append(
+            {
+                "speaker": speaker,
+                "duration": stats["duration"],
+                "word_count": stats["word_count"],
+                "percentage": percentage,
+            }
+        )
 
     # Calculate basic metrics
-    primary_speaker = max(speaker_breakdown, key=lambda x: x['percentage']) if speaker_breakdown else None
-    talk_time_percentage = primary_speaker['percentage'] if primary_speaker else 0
+    primary_speaker = (
+        max(speaker_breakdown, key=lambda x: x["percentage"])
+        if speaker_breakdown
+        else None
+    )
+    talk_time_percentage = primary_speaker["percentage"] if primary_speaker else 0
 
     # Simple interruption detection (placeholder)
     interruptions = max(0, len(segments) - len(speaker_stats)) // 2
@@ -205,7 +218,7 @@ def calculate_communication_metrics(transcript_result: Dict[str, Any]) -> Dict[s
         "average_response_delay": average_response_delay,
         "speaker_breakdown": speaker_breakdown,
         "total_speakers": len(speaker_stats),
-        "total_segments": len(segments)
+        "total_segments": len(segments),
     }
 
 
@@ -216,13 +229,13 @@ async def perform_llm_analysis(transcript_result: Dict[str, Any]) -> Dict[str, A
     """
 
     # Extract full text from transcript
-    full_text = transcript_result.get('text', '')
+    full_text = transcript_result.get("text", "")
     if not full_text.strip():
         return {
             "summary": "No transcript available for analysis",
             "action_items": [],
             "key_topics": [],
-            "sentiment": {"overall": "neutral", "score": 0.0}
+            "sentiment": {"overall": "neutral", "score": 0.0},
         }
 
     # For now, return placeholder results
@@ -238,17 +251,14 @@ async def perform_llm_analysis(transcript_result: Dict[str, Any]) -> Dict[str, A
             "action_items": [
                 {"text": "Follow up on project timeline", "priority": "high"},
                 {"text": "Schedule next team sync", "priority": "medium"},
-                {"text": "Review meeting objectives", "priority": "low"}
+                {"text": "Review meeting objectives", "priority": "low"},
             ],
             "key_topics": [
                 {"topic": "Project Planning", "relevance": 0.9},
                 {"topic": "Team Coordination", "relevance": 0.7},
-                {"topic": "Progress Review", "relevance": 0.6}
+                {"topic": "Progress Review", "relevance": 0.6},
             ],
-            "sentiment": {
-                "overall": "positive",
-                "score": 0.7
-            }
+            "sentiment": {"overall": "positive", "score": 0.7},
         }
 
     except Exception as e:
@@ -257,7 +267,7 @@ async def perform_llm_analysis(transcript_result: Dict[str, Any]) -> Dict[str, A
             "summary": "Analysis completed with basic metrics",
             "action_items": [],
             "key_topics": [],
-            "sentiment": {"overall": "neutral", "score": 0.0}
+            "sentiment": {"overall": "neutral", "score": 0.0},
         }
 
 
@@ -277,10 +287,7 @@ async def analysis_health_check():
             "supabase_configured": bool(supabase.url and supabase.service_key),
             "transcription_available": True,
             "model_size": transcription_service.model_size,
-            "device": transcription_service.device
+            "device": transcription_service.device,
         }
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}

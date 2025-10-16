@@ -34,7 +34,7 @@ def get_transcription_service() -> TranscriptionService:
 async def transcribe_audio(
     file: UploadFile = File(...),
     language: Optional[str] = Form(None),
-    enable_word_timestamps: bool = Form(True)
+    enable_word_timestamps: bool = Form(True),
 ):
     """
     Transcribe audio file using WhisperX.
@@ -55,13 +55,13 @@ async def transcribe_audio(
         raise HTTPException(status_code=400, detail="No filename provided")
 
     # Validate file type
-    allowed_extensions = ['.wav', '.mp3', '.m4a', '.mp4', '.flac', '.ogg']
+    allowed_extensions = [".wav", ".mp3", ".m4a", ".mp4", ".flac", ".ogg"]
     file_ext = Path(file.filename).suffix.lower()
 
     if file_ext not in allowed_extensions:
         raise HTTPException(
             status_code=400,
-            detail=f"Unsupported file type: {file_ext}. Allowed: {', '.join(allowed_extensions)}"
+            detail=f"Unsupported file type: {file_ext}. Allowed: {', '.join(allowed_extensions)}",
         )
 
     # Save uploaded file temporarily
@@ -79,25 +79,15 @@ async def transcribe_audio(
         # Transcribe
         if enable_word_timestamps:
             result = service.transcribe_with_words(
-                Path(temp_audio.name),
-                language=language
+                Path(temp_audio.name), language=language
             )
         else:
-            result = service.transcribe(
-                Path(temp_audio.name),
-                language=language
-            )
+            result = service.transcribe(Path(temp_audio.name), language=language)
 
-        return JSONResponse(content={
-            "success": True,
-            **result
-        })
+        return JSONResponse(content={"success": True, **result})
 
     except Exception as e:
-        raise HTTPException(
-            status_code=500,
-            detail=f"Transcription failed: {str(e)}"
-        )
+        raise HTTPException(status_code=500, detail=f"Transcription failed: {str(e)}")
 
     finally:
         # Cleanup temp file
@@ -116,11 +106,7 @@ async def get_supported_languages():
     service = get_transcription_service()
     languages = service.get_supported_languages()
 
-    return {
-        "success": True,
-        "languages": languages,
-        "total": len(languages)
-    }
+    return {"success": True, "languages": languages, "total": len(languages)}
 
 
 @router.get("/health")
@@ -135,10 +121,7 @@ async def audio_health_check():
             "service": "audio-processing",
             "transcription_available": True,
             "model_size": service.model_size,
-            "device": service.device
+            "device": service.device,
         }
     except Exception as e:
-        return {
-            "success": False,
-            "error": str(e)
-        }
+        return {"success": False, "error": str(e)}

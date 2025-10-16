@@ -51,6 +51,7 @@ class GeminiProvider(BaseAIProvider):
         if self.client is None:
             try:
                 import google.generativeai as genai
+
                 genai.configure(api_key=self.api_key)
                 self.client = genai
             except ImportError:
@@ -61,9 +62,7 @@ class GeminiProvider(BaseAIProvider):
         return self.client
 
     async def analyze_transcript(
-        self,
-        transcript_text: str,
-        company_values: List[str] = None
+        self, transcript_text: str, company_values: List[str] = None
     ) -> AnalysisResult:
         """
         Analyze transcript using Gemini Flash.
@@ -77,7 +76,7 @@ class GeminiProvider(BaseAIProvider):
         """
         try:
             genai = self._get_client()
-            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
             # Truncate if needed
             truncated_text = self.truncate_transcript(transcript_text)
@@ -132,37 +131,37 @@ Provide only valid JSON, no other text.
             text = response.text.strip()
 
             # Clean up markdown code blocks if present
-            text = re.sub(r'^```json\s*', '', text)
-            text = re.sub(r'^```\s*', '', text)
-            text = re.sub(r'\s*```$', '', text)
+            text = re.sub(r"^```json\s*", "", text)
+            text = re.sub(r"^```\s*", "", text)
+            text = re.sub(r"\s*```$", "", text)
 
             # Parse JSON
             analysis = json.loads(text.strip())
 
             # Convert to dataclasses
             return AnalysisResult(
-                summary=analysis.get('summary', 'No summary available'),
+                summary=analysis.get("summary", "No summary available"),
                 action_items=[
                     ActionItem(
-                        text=item['text'],
-                        priority=item.get('priority', 'medium')
+                        text=item["text"], priority=item.get("priority", "medium")
                     )
-                    for item in analysis.get('actionItems', [])
+                    for item in analysis.get("actionItems", [])
                 ],
                 key_topics=[
                     KeyTopic(
-                        topic=topic['topic'],
-                        relevance=topic.get('relevance', 0.5)
+                        topic=topic["topic"], relevance=topic.get("relevance", 0.5)
                     )
-                    for topic in analysis.get('keyTopics', [])
+                    for topic in analysis.get("keyTopics", [])
                 ],
                 sentiment=Sentiment(
-                    overall=analysis.get('sentiment', {}).get('overall', 'neutral'),
-                    score=analysis.get('sentiment', {}).get('score', 0.0)
+                    overall=analysis.get("sentiment", {}).get("overall", "neutral"),
+                    score=analysis.get("sentiment", {}).get("score", 0.0),
                 ),
-                company_values_alignment=self._parse_values_alignment(
-                    analysis.get('companyValuesAlignment')
-                ) if company_values else None
+                company_values_alignment=(
+                    self._parse_values_alignment(analysis.get("companyValuesAlignment"))
+                    if company_values
+                    else None
+                ),
             )
 
         except Exception as error:
@@ -175,7 +174,7 @@ Provide only valid JSON, no other text.
         talk_time_percentage: float,
         interruptions: int,
         num_speakers: int,
-        duration_minutes: float
+        duration_minutes: float,
     ) -> str:
         """
         Generate communication insights using Gemini.
@@ -192,7 +191,7 @@ Provide only valid JSON, no other text.
         """
         try:
             genai = self._get_client()
-            model = genai.GenerativeModel('gemini-2.0-flash-exp')
+            model = genai.GenerativeModel("gemini-2.0-flash-exp")
 
             truncated_text = self.truncate_transcript(transcript_text, 30000)
 
@@ -229,15 +228,15 @@ Be concise and constructive.
             return None
 
         return CompanyValuesAlignment(
-            overall_alignment=data.get('overallAlignment', 0.0),
+            overall_alignment=data.get("overallAlignment", 0.0),
             values=[
                 CompanyValue(
-                    value=v['value'],
-                    score=v.get('score', 0.0),
-                    examples=v.get('examples', [])
+                    value=v["value"],
+                    score=v.get("score", 0.0),
+                    examples=v.get("examples", []),
                 )
-                for v in data.get('values', [])
-            ]
+                for v in data.get("values", [])
+            ],
         )
 
 

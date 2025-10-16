@@ -27,7 +27,7 @@ class TranscriptionService:
         self,
         model_name: str = "base",
         device: str = "auto",
-        compute_type: str = "float16"
+        compute_type: str = "float16",
     ):
         """Initialize transcription service (currently mock)."""
         logger.info("🎭 Using MOCK transcription service (CHI-22: implement real ML)")
@@ -39,7 +39,7 @@ class TranscriptionService:
         language: Optional[str] = None,
         enable_diarization: bool = True,
         min_speakers: Optional[int] = None,
-        max_speakers: Optional[int] = None
+        max_speakers: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Transcribe audio file (currently returns mock data).
@@ -49,9 +49,7 @@ class TranscriptionService:
         return self.mock_service.transcribe(audio_path)
 
     def transcribe_with_words(
-        self,
-        audio_path: Path,
-        language: Optional[str] = None
+        self, audio_path: Path, language: Optional[str] = None
     ) -> Dict[str, Any]:
         """Transcribe with word-level timestamps (currently mock)."""
         return self.transcribe(audio_path, language, enable_diarization=True)

@@ -50,6 +50,7 @@ class OpenAIProvider(BaseAIProvider):
         if self.client is None:
             try:
                 from openai import AsyncOpenAI
+
                 self.client = AsyncOpenAI(api_key=self.api_key)
             except ImportError:
                 raise ImportError(
@@ -59,9 +60,7 @@ class OpenAIProvider(BaseAIProvider):
         return self.client
 
     async def analyze_transcript(
-        self,
-        transcript_text: str,
-        company_values: List[str] = None
+        self, transcript_text: str, company_values: List[str] = None
     ) -> AnalysisResult:
         """
         Analyze transcript using GPT-4.
@@ -130,12 +129,9 @@ Provide only valid JSON, no other text.
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert meeting analyst. Provide analysis in valid JSON format only."
+                        "content": "You are an expert meeting analyst. Provide analysis in valid JSON format only.",
                     },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.3,
             )
@@ -149,28 +145,28 @@ Provide only valid JSON, no other text.
 
             # Convert to dataclasses
             return AnalysisResult(
-                summary=analysis.get('summary', 'No summary available'),
+                summary=analysis.get("summary", "No summary available"),
                 action_items=[
                     ActionItem(
-                        text=item['text'],
-                        priority=item.get('priority', 'medium')
+                        text=item["text"], priority=item.get("priority", "medium")
                     )
-                    for item in analysis.get('actionItems', [])
+                    for item in analysis.get("actionItems", [])
                 ],
                 key_topics=[
                     KeyTopic(
-                        topic=topic['topic'],
-                        relevance=topic.get('relevance', 0.5)
+                        topic=topic["topic"], relevance=topic.get("relevance", 0.5)
                     )
-                    for topic in analysis.get('keyTopics', [])
+                    for topic in analysis.get("keyTopics", [])
                 ],
                 sentiment=Sentiment(
-                    overall=analysis.get('sentiment', {}).get('overall', 'neutral'),
-                    score=analysis.get('sentiment', {}).get('score', 0.0)
+                    overall=analysis.get("sentiment", {}).get("overall", "neutral"),
+                    score=analysis.get("sentiment", {}).get("score", 0.0),
                 ),
-                company_values_alignment=self._parse_values_alignment(
-                    analysis.get('companyValuesAlignment')
-                ) if company_values else None
+                company_values_alignment=(
+                    self._parse_values_alignment(analysis.get("companyValuesAlignment"))
+                    if company_values
+                    else None
+                ),
             )
 
         except Exception as error:
@@ -183,7 +179,7 @@ Provide only valid JSON, no other text.
         talk_time_percentage: float,
         interruptions: int,
         num_speakers: int,
-        duration_minutes: float
+        duration_minutes: float,
     ) -> str:
         """
         Generate communication insights using GPT-4.
@@ -228,15 +224,12 @@ Be concise and constructive.
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert communication coach."
+                        "content": "You are an expert communication coach.",
                     },
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
+                    {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
-                max_tokens=200
+                max_tokens=200,
             )
 
             return response.choices[0].message.content.strip()
@@ -251,15 +244,15 @@ Be concise and constructive.
             return None
 
         return CompanyValuesAlignment(
-            overall_alignment=data.get('overallAlignment', 0.0),
+            overall_alignment=data.get("overallAlignment", 0.0),
             values=[
                 CompanyValue(
-                    value=v['value'],
-                    score=v.get('score', 0.0),
-                    examples=v.get('examples', [])
+                    value=v["value"],
+                    score=v.get("score", 0.0),
+                    examples=v.get("examples", []),
                 )
-                for v in data.get('values', [])
-            ]
+                for v in data.get("values", [])
+            ],
         )
 
 

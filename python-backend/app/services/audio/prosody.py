@@ -57,9 +57,7 @@ class ProsodyService:
         raise NotImplementedError("Pitch analysis not yet implemented")
 
     def analyze_speech_rate(
-        self,
-        audio_path: Path,
-        transcription: str
+        self, audio_path: Path, transcription: str
     ) -> Dict[str, float]:
         """
         Analyze speech rate.
@@ -107,9 +105,7 @@ class ProsodyService:
         raise NotImplementedError("Energy analysis not yet implemented")
 
     def analyze_all(
-        self,
-        audio_path: Path,
-        transcription: Optional[str] = None
+        self, audio_path: Path, transcription: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         Run all prosody analyses.

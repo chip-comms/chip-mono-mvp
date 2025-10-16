@@ -10,6 +10,7 @@ from pathlib import Path
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse
+
 # import ffmpeg  # TODO (CHI-22): Re-enable for real ML pipeline
 # from PIL import Image  # TODO (CHI-22): Re-enable for real ML pipeline
 
@@ -18,10 +19,7 @@ router = APIRouter()
 
 
 @router.post("/extract-audio")
-async def extract_audio(
-    file: UploadFile = File(...),
-    format: str = Form("wav")
-):
+async def extract_audio(file: UploadFile = File(...), format: str = Form("wav")):
     """
     Extract audio from video file.
 
@@ -31,14 +29,18 @@ async def extract_audio(
         raise HTTPException(status_code=400, detail="No filename provided")
 
     # Save uploaded file temporarily
-    temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix)
+    temp_video = tempfile.NamedTemporaryFile(
+        delete=False, suffix=Path(file.filename).suffix
+    )
     try:
         content = await file.read()
         temp_video.write(content)
         temp_video.close()
 
         # Extract audio using ffmpeg
-        output_path = temp_video.name.replace(Path(temp_video.name).suffix, f".{format}")
+        output_path = temp_video.name.replace(
+            Path(temp_video.name).suffix, f".{format}"
+        )
 
         try:
             ffmpeg.input(temp_video.name).output(
@@ -49,8 +51,7 @@ async def extract_audio(
             ).overwrite_output().run(capture_stdout=True, capture_stderr=True)
         except ffmpeg.Error as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"FFmpeg error: {e.stderr.decode()}"
+                status_code=500, detail=f"FFmpeg error: {e.stderr.decode()}"
             )
 
         # Return the audio file
@@ -71,7 +72,7 @@ async def generate_thumbnail(
     file: UploadFile = File(...),
     timestamp: float = Form(0.0),
     width: int = Form(640),
-    height: int = Form(360)
+    height: int = Form(360),
 ):
     """
     Generate a thumbnail from video at a specific timestamp.
@@ -86,7 +87,9 @@ async def generate_thumbnail(
         raise HTTPException(status_code=400, detail="No filename provided")
 
     # Save uploaded file temporarily
-    temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix)
+    temp_video = tempfile.NamedTemporaryFile(
+        delete=False, suffix=Path(file.filename).suffix
+    )
     temp_image = tempfile.NamedTemporaryFile(delete=False, suffix=".jpg")
 
     try:
@@ -99,13 +102,12 @@ async def generate_thumbnail(
         try:
             ffmpeg.input(temp_video.name, ss=timestamp).filter(
                 "scale", width, height
-            ).output(
-                temp_image.name, vframes=1
-            ).overwrite_output().run(capture_stdout=True, capture_stderr=True)
+            ).output(temp_image.name, vframes=1).overwrite_output().run(
+                capture_stdout=True, capture_stderr=True
+            )
         except ffmpeg.Error as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"FFmpeg error: {e.stderr.decode()}"
+                status_code=500, detail=f"FFmpeg error: {e.stderr.decode()}"
             )
 
         # Return the thumbnail
@@ -132,7 +134,9 @@ async def get_video_info(file: UploadFile = File(...)):
         raise HTTPException(status_code=400, detail="No filename provided")
 
     # Save uploaded file temporarily
-    temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix)
+    temp_video = tempfile.NamedTemporaryFile(
+        delete=False, suffix=Path(file.filename).suffix
+    )
 
     try:
         content = await file.read()
@@ -144,18 +148,15 @@ async def get_video_info(file: UploadFile = File(...)):
             probe = ffmpeg.probe(temp_video.name)
         except ffmpeg.Error as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"FFmpeg error: {e.stderr.decode()}"
+                status_code=500, detail=f"FFmpeg error: {e.stderr.decode()}"
             )
 
         # Extract relevant information
         video_info = next(
-            (s for s in probe["streams"] if s["codec_type"] == "video"),
-            None
+            (s for s in probe["streams"] if s["codec_type"] == "video"), None
         )
         audio_info = next(
-            (s for s in probe["streams"] if s["codec_type"] == "audio"),
-            None
+            (s for s in probe["streams"] if s["codec_type"] == "audio"), None
         )
 
         if not video_info:
@@ -171,11 +172,17 @@ async def get_video_info(file: UploadFile = File(...)):
                 "height": video_info.get("height"),
                 "fps": eval(video_info.get("r_frame_rate", "0/1")),
             },
-            "audio": {
-                "codec": audio_info.get("codec_name") if audio_info else None,
-                "sample_rate": audio_info.get("sample_rate") if audio_info else None,
-                "channels": audio_info.get("channels") if audio_info else None,
-            } if audio_info else None,
+            "audio": (
+                {
+                    "codec": audio_info.get("codec_name") if audio_info else None,
+                    "sample_rate": (
+                        audio_info.get("sample_rate") if audio_info else None
+                    ),
+                    "channels": audio_info.get("channels") if audio_info else None,
+                }
+                if audio_info
+                else None
+            ),
         }
 
     finally:
@@ -186,8 +193,7 @@ async def get_video_info(file: UploadFile = File(...)):
 
 @router.post("/compress")
 async def compress_video(
-    file: UploadFile = File(...),
-    quality: str = Form("medium")  # low, medium, high
+    file: UploadFile = File(...), quality: str = Form("medium")  # low, medium, high
 ):
     """
     Compress video file to reduce size.
@@ -201,8 +207,12 @@ async def compress_video(
         raise HTTPException(status_code=400, detail="No filename provided")
 
     # Save uploaded file temporarily
-    temp_video = tempfile.NamedTemporaryFile(delete=False, suffix=Path(file.filename).suffix)
-    output_path = temp_video.name.replace(Path(temp_video.name).suffix, "_compressed.mp4")
+    temp_video = tempfile.NamedTemporaryFile(
+        delete=False, suffix=Path(file.filename).suffix
+    )
+    output_path = temp_video.name.replace(
+        Path(temp_video.name).suffix, "_compressed.mp4"
+    )
 
     try:
         content = await file.read()
@@ -210,11 +220,7 @@ async def compress_video(
         temp_video.close()
 
         # Compression presets
-        presets = {
-            "low": "fast",
-            "medium": "medium",
-            "high": "slow"
-        }
+        presets = {"low": "fast", "medium": "medium", "high": "slow"}
         preset = presets.get(quality, "medium")
 
         # Compress using ffmpeg
@@ -225,12 +231,11 @@ async def compress_video(
                 crf=23,
                 preset=preset,
                 acodec="aac",
-                audio_bitrate="128k"
+                audio_bitrate="128k",
             ).overwrite_output().run(capture_stdout=True, capture_stderr=True)
         except ffmpeg.Error as e:
             raise HTTPException(
-                status_code=500,
-                detail=f"FFmpeg error: {e.stderr.decode()}"
+                status_code=500, detail=f"FFmpeg error: {e.stderr.decode()}"
             )
 
         # Return compressed video

@@ -47,8 +47,7 @@ class Settings(BaseSettings):
 
     # Preferred AI provider (auto, openai, gemini, anthropic)
     ai_provider: Literal["auto", "openai", "gemini", "anthropic"] = os.getenv(
-        "AI_PROVIDER",
-        "auto"
+        "AI_PROVIDER", "auto"
     )
 
     class Config:
@@ -58,7 +57,11 @@ class Settings(BaseSettings):
         """Validate AI configuration."""
         errors = []
 
-        if not self.openai_api_key and not self.gemini_api_key and not self.anthropic_api_key:
+        if (
+            not self.openai_api_key
+            and not self.gemini_api_key
+            and not self.anthropic_api_key
+        ):
             errors.append(
                 "At least one AI provider API key is required "
                 "(OPENAI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY)"
@@ -68,13 +71,14 @@ class Settings(BaseSettings):
             "valid": len(errors) == 0,
             "errors": errors,
             "available_providers": [
-                name for name, key in [
+                name
+                for name, key in [
                     ("OpenAI", self.openai_api_key),
                     ("Gemini", self.gemini_api_key),
                     ("Anthropic", self.anthropic_api_key),
                 ]
                 if key
-            ]
+            ],
         }
 
 

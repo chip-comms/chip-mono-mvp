@@ -56,23 +56,23 @@ class MockTranscriptionService:
                         {"word": "a", "start": 0.5, "end": 0.6},
                         {"word": "mock", "start": 0.7, "end": 1.0},
                         {"word": "transcription", "start": 1.1, "end": 1.8},
-                    ]
+                    ],
                 },
                 {
                     "start": 4.0,
                     "end": 10.5,
                     "text": segment2_text,
                     "speaker": "SPEAKER_01",
-                    "words": []
+                    "words": [],
                 },
                 {
                     "start": 11.0,
                     "end": 16.0,
                     "text": segment3_text,
                     "speaker": "SPEAKER_00",
-                    "words": []
-                }
+                    "words": [],
+                },
             ],
             "language": "en",
-            "duration": 16.0
+            "duration": 16.0,
         }

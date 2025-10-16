@@ -13,6 +13,7 @@ from dataclasses import dataclass
 @dataclass
 class ActionItem:
     """Action item from meeting analysis."""
+
     text: str
     priority: str  # "high" | "medium" | "low"
 
@@ -20,6 +21,7 @@ class ActionItem:
 @dataclass
 class KeyTopic:
     """Key topic identified in meeting."""
+
     topic: str
     relevance: float  # 0.0 to 1.0
 
@@ -27,6 +29,7 @@ class KeyTopic:
 @dataclass
 class Sentiment:
     """Sentiment analysis result."""
+
     overall: str  # "positive" | "neutral" | "negative"
     score: float  # -1.0 to 1.0
 
@@ -34,6 +37,7 @@ class Sentiment:
 @dataclass
 class CompanyValue:
     """Company value alignment."""
+
     value: str
     score: float  # 0.0 to 1.0
     examples: List[str]
@@ -42,6 +46,7 @@ class CompanyValue:
 @dataclass
 class CompanyValuesAlignment:
     """Overall company values alignment."""
+
     overall_alignment: float  # 0.0 to 1.0
     values: List[CompanyValue]
 
@@ -49,6 +54,7 @@ class CompanyValuesAlignment:
 @dataclass
 class AnalysisResult:
     """Result from transcript analysis."""
+
     summary: str
     action_items: List[ActionItem]
     key_topics: List[KeyTopic]
@@ -74,9 +80,7 @@ class AIProvider(ABC):
 
     @abstractmethod
     async def analyze_transcript(
-        self,
-        transcript_text: str,
-        company_values: List[str] = None
+        self, transcript_text: str, company_values: List[str] = None
     ) -> AnalysisResult:
         """
         Analyze a transcript and generate insights.
@@ -96,7 +100,7 @@ class AIProvider(ABC):
         talk_time_percentage: float,
         interruptions: int,
         num_speakers: int,
-        duration_minutes: float
+        duration_minutes: float,
     ) -> str:
         """
         Generate communication insights from transcript data.
@@ -137,11 +141,7 @@ class BaseAIProvider(AIProvider):
         """
         return bool(self.api_key and len(self.api_key) > 10)
 
-    def truncate_transcript(
-        self,
-        transcript_text: str,
-        max_length: int = 50000
-    ) -> str:
+    def truncate_transcript(self, transcript_text: str, max_length: int = 50000) -> str:
         """
         Helper method to truncate long transcripts if needed.
 
@@ -159,12 +159,12 @@ class BaseAIProvider(AIProvider):
 
         # Truncate to maxLength but break at word boundaries
         truncated = transcript_text[:max_length]
-        last_space_index = truncated.rfind(' ')
+        last_space_index = truncated.rfind(" ")
 
         if last_space_index > 0:
-            return truncated[:last_space_index] + '... [truncated]'
+            return truncated[:last_space_index] + "... [truncated]"
 
-        return truncated + '... [truncated]'
+        return truncated + "... [truncated]"
 
     def format_company_values(self, values: List[str]) -> str:
         """
@@ -179,7 +179,4 @@ class BaseAIProvider(AIProvider):
         if not values:
             return "No specific company values provided."
 
-        return "\n".join(
-            f"{i + 1}. {value}"
-            for i, value in enumerate(values)
-        )
+        return "\n".join(f"{i + 1}. {value}" for i, value in enumerate(values))

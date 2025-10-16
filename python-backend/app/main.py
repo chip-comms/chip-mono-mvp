@@ -77,5 +77,5 @@ async def root():
         "docs": "/docs",
         "supabase_configured": bool(os.getenv("SUPABASE_URL")),
         "ai_provider": os.getenv("AI_PROVIDER", "gemini"),
-        "environment": "production" if os.getenv("PORT") else "development"
+        "environment": "production" if os.getenv("PORT") else "development",
     }

@@ -32,7 +32,7 @@ class LLMAdapter:
         self,
         openai_api_key: Optional[str] = None,
         gemini_api_key: Optional[str] = None,
-        preferred_provider: str = "auto"
+        preferred_provider: str = "auto",
     ):
         """
         Initialize LLM adapter.
@@ -50,9 +50,7 @@ class LLMAdapter:
         self._initialize_providers(openai_api_key, gemini_api_key)
 
     def _initialize_providers(
-        self,
-        openai_key: Optional[str],
-        gemini_key: Optional[str]
+        self, openai_key: Optional[str], gemini_key: Optional[str]
     ):
         """Initialize available providers based on configuration."""
 
@@ -75,7 +73,9 @@ class LLMAdapter:
         #     self.providers.append(AnthropicProvider(anthropic_key))
 
         if not self.providers:
-            logger.warning("⚠️ No LLM providers configured. Set OPENAI_API_KEY or GEMINI_API_KEY")
+            logger.warning(
+                "⚠️ No LLM providers configured. Set OPENAI_API_KEY or GEMINI_API_KEY"
+            )
 
     async def get_provider(self) -> AIProvider:
         """
@@ -131,9 +131,7 @@ class LLMAdapter:
         return available
 
     async def analyze_transcript(
-        self,
-        transcript_text: str,
-        company_values: List[str] = None
+        self, transcript_text: str, company_values: List[str] = None
     ) -> AnalysisResult:
         """
         Analyze transcript using the best available provider.
@@ -154,7 +152,7 @@ class LLMAdapter:
         talk_time_percentage: float,
         interruptions: int,
         num_speakers: int = 2,
-        duration_minutes: float = 30.0
+        duration_minutes: float = 30.0,
     ) -> str:
         """
         Generate communication insights using the best available provider.
@@ -175,7 +173,7 @@ class LLMAdapter:
             talk_time_percentage,
             interruptions,
             num_speakers,
-            duration_minutes
+            duration_minutes,
         )
 
     def reset_provider(self):

@@ -28,9 +28,7 @@ class PrimaryMetricsService:
     """
 
     def calculate_talk_ratio(
-        self,
-        diarization_data: Dict,
-        total_duration: float
+        self, diarization_data: Dict, total_duration: float
     ) -> Dict[str, float]:
         """
         Calculate speaking time ratio per speaker.
@@ -46,10 +44,7 @@ class PrimaryMetricsService:
         # Requires: Speaker diarization data
         raise NotImplementedError("Talk ratio not yet implemented")
 
-    def calculate_response_latency(
-        self,
-        diarization_data: Dict
-    ) -> Dict[str, Any]:
+    def calculate_response_latency(self, diarization_data: Dict) -> Dict[str, Any]:
         """
         Calculate gaps between speaker turns.
 
@@ -68,10 +63,7 @@ class PrimaryMetricsService:
         raise NotImplementedError("Response latency not yet implemented")
 
     def calculate_speech_pace(
-        self,
-        prosody_data: Dict,
-        transcription: str,
-        speaking_duration: float
+        self, prosody_data: Dict, transcription: str, speaking_duration: float
     ) -> Dict[str, float]:
         """
         Calculate speech rate metrics.
@@ -90,10 +82,7 @@ class PrimaryMetricsService:
         # Requires: Prosody analysis + transcription
         raise NotImplementedError("Speech pace not yet implemented")
 
-    def calculate_filler_metrics(
-        self,
-        voice_metrics: Dict
-    ) -> Dict[str, Any]:
+    def calculate_filler_metrics(self, voice_metrics: Dict) -> Dict[str, Any]:
         """
         Calculate filler word statistics.
 
@@ -112,10 +101,7 @@ class PrimaryMetricsService:
         # Requires: Voice metrics data
         raise NotImplementedError("Filler metrics not yet implemented")
 
-    def calculate_vocal_energy(
-        self,
-        prosody_data: Dict
-    ) -> Dict[str, float]:
+    def calculate_vocal_energy(self, prosody_data: Dict) -> Dict[str, float]:
         """
         Calculate vocal energy and pitch metrics.
 
@@ -134,10 +120,7 @@ class PrimaryMetricsService:
         # Requires: Prosody analysis
         raise NotImplementedError("Vocal energy metrics not yet implemented")
 
-    def calculate_eye_contact(
-        self,
-        eye_tracking_data: Dict
-    ) -> Dict[str, float]:
+    def calculate_eye_contact(self, eye_tracking_data: Dict) -> Dict[str, float]:
         """
         Calculate eye contact percentage.
 
@@ -155,10 +138,7 @@ class PrimaryMetricsService:
         # Requires: Eye tracking data
         raise NotImplementedError("Eye contact metrics not yet implemented")
 
-    def calculate_interruptions(
-        self,
-        diarization_data: Dict
-    ) -> Dict[str, Any]:
+    def calculate_interruptions(self, diarization_data: Dict) -> Dict[str, Any]:
         """
         Detect and count interruptions.
 
@@ -178,8 +158,7 @@ class PrimaryMetricsService:
         raise NotImplementedError("Interruption metrics not yet implemented")
 
     def calculate_all_primary_metrics(
-        self,
-        analysis_results: Dict[str, Any]
+        self, analysis_results: Dict[str, Any]
     ) -> Dict[str, Any]:
         """
         Calculate all primary metrics from analysis results.

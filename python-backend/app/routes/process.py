@@ -18,24 +18,25 @@ from app.services.llm.llm_adapter import LLMAdapter
 # Configure logging to output to stdout with immediate flush
 logging.basicConfig(
     level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.StreamHandler(sys.stdout)
-    ],
-    force=True
+    format="%(asctime)s - %(levelname)s - %(message)s",
+    handlers=[logging.StreamHandler(sys.stdout)],
+    force=True,
 )
 logger = logging.getLogger(__name__)
 # Force flush after every log message
 for handler in logger.handlers:
     handler.setLevel(logging.INFO)
-    if hasattr(handler, 'setFormatter'):
-        handler.setFormatter(logging.Formatter('%(asctime)s - %(levelname)s - %(message)s'))
+    if hasattr(handler, "setFormatter"):
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+        )
 
 router = APIRouter()
 
 
 class ProcessJobRequest(BaseModel):
     """Request model for processing a job"""
+
     job_id: str
     user_id: str
     file_url: str
@@ -45,6 +46,7 @@ class ProcessJobRequest(BaseModel):
 
 class ProcessJobResponse(BaseModel):
     """Response model for processing job"""
+
     success: bool
     message: str
     python_job_id: str
@@ -54,9 +56,9 @@ class ProcessJobResponse(BaseModel):
 async def download_file(url: str, destination: Path) -> None:
     """Download file from URL to destination path"""
     async with httpx.AsyncClient(timeout=600.0) as client:
-        async with client.stream('GET', url) as response:
+        async with client.stream("GET", url) as response:
             response.raise_for_status()
-            with open(destination, 'wb') as f:
+            with open(destination, "wb") as f:
                 async for chunk in response.aiter_bytes(chunk_size=8192):
                     f.write(chunk)
 
@@ -95,10 +97,14 @@ async def process_job_task(
         transcription_service = TranscriptionService()
         transcription_result = transcription_service.transcribe(temp_file)
 
-        if not transcription_result or 'error' in transcription_result:
-            raise Exception(f"Transcription failed: {transcription_result.get('error', 'Unknown error')}")
+        if not transcription_result or "error" in transcription_result:
+            raise Exception(
+                f"Transcription failed: {transcription_result.get('error', 'Unknown error')}"
+            )
 
-        logger.info(f"[Job {job_id}] Transcription complete. Segments: {len(transcription_result.get('segments', []))}")
+        logger.info(
+            f"[Job {job_id}] Transcription complete. Segments: {len(transcription_result.get('segments', []))}"
+        )
         sys.stdout.flush()
 
         # Step 2: Generate AI analysis
@@ -107,37 +113,49 @@ async def process_job_task(
         llm_adapter = LLMAdapter()
 
         # Generate summary and insights from transcript
-        transcript_text = transcription_result.get('text', '')
+        transcript_text = transcription_result.get("text", "")
 
         # Use the analyze_transcript method from LLM adapter
         try:
             analysis_result = await llm_adapter.analyze_transcript(transcript_text)
 
             # Convert AnalysisResult to dict format expected by database
-            key_topics = [topic.topic for topic in analysis_result.key_topics] \
-                if analysis_result.key_topics else []
-            action_items = [
-                {"text": item.text, "priority": item.priority}
-                for item in analysis_result.action_items
-            ] if analysis_result.action_items else []
-            effectiveness = int(analysis_result.sentiment.score * 100) \
-                if analysis_result.sentiment else 50
+            key_topics = (
+                [topic.topic for topic in analysis_result.key_topics]
+                if analysis_result.key_topics
+                else []
+            )
+            action_items = (
+                [
+                    {"text": item.text, "priority": item.priority}
+                    for item in analysis_result.action_items
+                ]
+                if analysis_result.action_items
+                else []
+            )
+            effectiveness = (
+                int(analysis_result.sentiment.score * 100)
+                if analysis_result.sentiment
+                else 50
+            )
 
             analysis_data = {
                 "summary": analysis_result.summary,
                 "key_topics": key_topics,
                 "action_items": action_items,
-                "effectiveness_score": effectiveness
+                "effectiveness_score": effectiveness,
             }
         except Exception as llm_error:
-            logger.warning(f"[Job {job_id}] LLM analysis failed: {str(llm_error)}, using fallback")
+            logger.warning(
+                f"[Job {job_id}] LLM analysis failed: {str(llm_error)}, using fallback"
+            )
             sys.stdout.flush()
             # Fallback analysis if LLM fails
             analysis_data = {
                 "summary": f"Meeting transcript analyzed with {len(transcript_text.split())} words.",
                 "key_topics": ["General Discussion"],
                 "action_items": [],
-                "effectiveness_score": 50
+                "effectiveness_score": 50,
             }
 
         logger.info(f"[Job {job_id}] AI analysis complete")
@@ -146,28 +164,34 @@ async def process_job_task(
         # Step 3: Calculate speaker statistics
         logger.info(f"[Job {job_id}] Calculating speaker statistics...")
         sys.stdout.flush()
-        segments = transcription_result.get('segments', [])
+        segments = transcription_result.get("segments", [])
         speaker_stats: Dict[str, Any] = {}
 
         for segment in segments:
-            speaker = segment.get('speaker', 'Unknown')
+            speaker = segment.get("speaker", "Unknown")
             if speaker not in speaker_stats:
                 speaker_stats[speaker] = {
-                    'total_time': 0,
-                    'word_count': 0,
-                    'segments': 0
+                    "total_time": 0,
+                    "word_count": 0,
+                    "segments": 0,
                 }
 
-            speaker_stats[speaker]['total_time'] += segment.get('end', 0) - segment.get('start', 0)
-            speaker_stats[speaker]['word_count'] += len(segment.get('text', '').split())
-            speaker_stats[speaker]['segments'] += 1
+            speaker_stats[speaker]["total_time"] += segment.get("end", 0) - segment.get(
+                "start", 0
+            )
+            speaker_stats[speaker]["word_count"] += len(segment.get("text", "").split())
+            speaker_stats[speaker]["segments"] += 1
 
         # Calculate percentages
-        total_time = sum(stats['total_time'] for stats in speaker_stats.values())
+        total_time = sum(stats["total_time"] for stats in speaker_stats.values())
         for speaker, stats in speaker_stats.items():
-            stats['percentage'] = (stats['total_time'] / total_time * 100) if total_time > 0 else 0
+            stats["percentage"] = (
+                (stats["total_time"] / total_time * 100) if total_time > 0 else 0
+            )
 
-        logger.info(f"[Job {job_id}] Speaker stats calculated. Speakers: {len(speaker_stats)}")
+        logger.info(
+            f"[Job {job_id}] Speaker stats calculated. Speakers: {len(speaker_stats)}"
+        )
         sys.stdout.flush()
 
         # Step 4: Save results to database
@@ -175,17 +199,17 @@ async def process_job_task(
         sys.stdout.flush()
 
         analysis_record = {
-            'job_id': job_id,
-            'user_id': user_id,
-            'transcript': transcription_result,
-            'summary': analysis_data.get('summary'),
-            'speaker_stats': speaker_stats,
-            'communication_metrics': {
-                'overall_score': analysis_data.get('effectiveness_score', 50),
-                'key_topics': analysis_data.get('key_topics', []),
-                'action_items': analysis_data.get('action_items', [])
+            "job_id": job_id,
+            "user_id": user_id,
+            "transcript": transcription_result,
+            "summary": analysis_data.get("summary"),
+            "speaker_stats": speaker_stats,
+            "communication_metrics": {
+                "overall_score": analysis_data.get("effectiveness_score", 50),
+                "key_topics": analysis_data.get("key_topics", []),
+                "action_items": analysis_data.get("action_items", []),
             },
-            'behavioral_insights': None  # Can be populated later with video analysis
+            "behavioral_insights": None,  # Can be populated later with video analysis
         }
 
         await supabase.save_analysis_results(job_id, analysis_record)
@@ -193,7 +217,7 @@ async def process_job_task(
         sys.stdout.flush()
 
         # Update job status to completed
-        await supabase.update_job_status(job_id, 'completed')
+        await supabase.update_job_status(job_id, "completed")
         logger.info(f"[Job {job_id}] Job status updated to 'completed'")
         sys.stdout.flush()
 
@@ -206,11 +230,13 @@ async def process_job_task(
 
         # Update job status to failed
         try:
-            await supabase.update_job_status(job_id, 'failed', str(e))
+            await supabase.update_job_status(job_id, "failed", str(e))
             logger.info(f"[Job {job_id}] Job status updated to 'failed'")
             sys.stdout.flush()
         except Exception as update_error:
-            logger.error(f"[Job {job_id}] Failed to update error status: {str(update_error)}")
+            logger.error(
+                f"[Job {job_id}] Failed to update error status: {str(update_error)}"
+            )
             sys.stdout.flush()
 
     finally:
@@ -229,8 +255,7 @@ async def process_job_task(
 
 @router.post("/process", response_model=ProcessJobResponse)
 async def process_job(
-    request: ProcessJobRequest,
-    background_tasks: BackgroundTasks
+    request: ProcessJobRequest, background_tasks: BackgroundTasks
 ) -> ProcessJobResponse:
     """
     Start processing a video/audio file.
@@ -257,14 +282,14 @@ async def process_job(
         request.job_id,
         request.user_id,
         request.file_url,
-        request.original_filename
+        request.original_filename,
     )
 
     return ProcessJobResponse(
         success=True,
         message="Processing started",
         python_job_id=python_job_id,
-        job_id=request.job_id
+        job_id=request.job_id,
     )
 
 
@@ -282,10 +307,7 @@ async def get_job_status(job_id: str) -> Dict[str, Any]:
         if not job:
             raise HTTPException(status_code=404, detail="Job not found")
 
-        return {
-            "success": True,
-            "job": job
-        }
+        return {"success": True, "job": job}
     except HTTPException:
         raise
     except Exception as e:

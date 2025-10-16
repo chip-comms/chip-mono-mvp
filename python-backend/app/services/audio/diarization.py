@@ -25,11 +25,7 @@ class DiarizationService:
     - Integration with transcription
     """
 
-    def __init__(
-        self,
-        hf_token: Optional[str] = None,
-        device: str = "cpu"
-    ):
+    def __init__(self, hf_token: Optional[str] = None, device: str = "cpu"):
         """
         Initialize diarization service.
 
@@ -65,7 +61,7 @@ class DiarizationService:
         self,
         audio_path: Path,
         min_speakers: Optional[int] = None,
-        max_speakers: Optional[int] = None
+        max_speakers: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Perform speaker diarization on audio.
@@ -113,9 +109,7 @@ class DiarizationService:
         raise NotImplementedError("Diarization not yet implemented")
 
     def assign_speakers_to_transcription(
-        self,
-        transcription_segments: List[Dict],
-        diarization_segments: List[Dict]
+        self, transcription_segments: List[Dict], diarization_segments: List[Dict]
     ) -> List[Dict]:
         """
         Assign speaker labels to transcription segments.

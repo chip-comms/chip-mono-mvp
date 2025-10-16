@@ -15,13 +15,14 @@ async def health_check():
     ffmpeg_available = False
     try:
         subprocess.run(
-            ["ffmpeg", "-version"],
-            capture_output=True,
-            check=True,
-            timeout=5
+            ["ffmpeg", "-version"], capture_output=True, check=True, timeout=5
         )
         ffmpeg_available = True
-    except (subprocess.CalledProcessError, FileNotFoundError, subprocess.TimeoutExpired):
+    except (
+        subprocess.CalledProcessError,
+        FileNotFoundError,
+        subprocess.TimeoutExpired,
+    ):
         pass
 
     return {

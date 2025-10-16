@@ -26,9 +26,21 @@ class VoiceMetricsService:
 
     # Common filler words in English
     FILLER_WORDS = [
-        "um", "uh", "uhm", "er", "ah", "like", "you know",
-        "so", "actually", "basically", "literally", "right",
-        "i mean", "kind of", "sort of"
+        "um",
+        "uh",
+        "uhm",
+        "er",
+        "ah",
+        "like",
+        "you know",
+        "so",
+        "actually",
+        "basically",
+        "literally",
+        "right",
+        "i mean",
+        "kind of",
+        "sort of",
     ]
 
     def __init__(self):
@@ -36,9 +48,7 @@ class VoiceMetricsService:
         logger.info("Initializing VoiceMetricsService")
 
     def detect_pauses(
-        self,
-        audio_path: Path,
-        min_pause_duration: float = 0.3
+        self, audio_path: Path, min_pause_duration: float = 0.3
     ) -> List[Dict[str, float]]:
         """
         Detect pauses in audio.
@@ -67,8 +77,7 @@ class VoiceMetricsService:
         raise NotImplementedError("Pause detection not yet implemented")
 
     def detect_filler_words(
-        self,
-        transcription_segments: List[Dict[str, Any]]
+        self, transcription_segments: List[Dict[str, Any]]
     ) -> Dict[str, Any]:
         """
         Detect filler words in transcription.
@@ -109,9 +118,7 @@ class VoiceMetricsService:
         raise NotImplementedError("Filler detection not yet implemented")
 
     def analyze_speaking_patterns(
-        self,
-        transcription_segments: List[Dict],
-        diarization_segments: List[Dict]
+        self, transcription_segments: List[Dict], diarization_segments: List[Dict]
     ) -> Dict[str, Any]:
         """
         Analyze speaking patterns across speakers.
@@ -131,9 +138,7 @@ class VoiceMetricsService:
         raise NotImplementedError("Speaking pattern analysis not yet implemented")
 
     def calculate_clarity_metrics(
-        self,
-        audio_path: Path,
-        transcription_segments: List[Dict]
+        self, audio_path: Path, transcription_segments: List[Dict]
     ) -> Dict[str, float]:
         """
         Calculate speech clarity metrics.
