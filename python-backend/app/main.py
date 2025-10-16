@@ -5,6 +5,7 @@ This service handles CPU/GPU intensive video operations that are better
 suited for Python than Node.js.
 """
 
+from app.config import settings
 import os
 from contextlib import asynccontextmanager
 from pathlib import Path
@@ -28,13 +29,13 @@ async def lifespan(app: FastAPI):
     temp_dir = Path(os.getenv("TEMP_DIR", "./storage/temp"))
     storage_dir.mkdir(parents=True, exist_ok=True)
     temp_dir.mkdir(parents=True, exist_ok=True)
-    
+
     print("🚀 Python backend started")
     print(f"📁 Storage: {storage_dir.absolute()}")
     print(f"📁 Temp: {temp_dir.absolute()}")
-    
+
     yield
-    
+
     # Shutdown: Cleanup if needed
     print("👋 Python backend shutting down")
 
@@ -47,7 +48,6 @@ app = FastAPI(
 )
 
 # CORS middleware
-from app.config import settings
 cors_origins_list = settings.cors_origins.split(",")
 app.add_middleware(
     CORSMiddleware,
@@ -79,4 +79,3 @@ async def root():
         "ai_provider": os.getenv("AI_PROVIDER", "gemini"),
         "environment": "production" if os.getenv("PORT") else "development"
     }
-

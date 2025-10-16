@@ -88,9 +88,10 @@ jobs:
       
       - name: Lint Python files with flake8
         if: steps.changed-files.outputs.any_changed == 'true'
+        working-directory: ./python-backend
         run: |
-          # Get Python files that changed
-          PYTHON_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^python-backend/.*\.py$' | tr '\n' ' ')
+          # Get Python files that changed (relative to python-backend dir)
+          PYTHON_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^python-backend/.*\.py$' | sed 's|^python-backend/||' | tr '\n' ' ')
           if [ -n "$PYTHON_FILES" ]; then
             echo "Linting Python files: $PYTHON_FILES"
             flake8 $PYTHON_FILES
@@ -106,27 +107,9 @@ jobs:
           PYTHON_FILES=$(echo "${{ steps.changed-files.outputs.all_changed_files }}" | tr ' ' '\n' | grep -E '^python-backend/.*\.py$' | tr '\n' ' ')
           if [ -n "$PYTHON_FILES" ]; then
             echo "Running import verification..."
-            python -c "
-import sys
-sys.path.append('.')
-try:
-    from app.main import app
-    print('✅ Main app imports successfully')
-except Exception as e:
-    print(f'❌ Main app import failed: {e}')
-    sys.exit(1)
-"
+            python -c "import sys; sys.path.append('.'); from app.main import app; print('✅ Main app imports successfully')" || (echo "❌ Main app import failed" && exit 1)
             echo "Checking route imports..."
-            python -c "
-import sys
-sys.path.append('.')
-try:
-    from app.routes.health import router
-    print('✅ Health route imports successfully')
-except Exception as e:
-    print(f'❌ Health route import failed: {e}')
-    sys.exit(1)
-"
+            python -c "import sys; sys.path.append('.'); from app.routes.health import router; print('✅ Health route imports successfully')" || (echo "❌ Health route import failed" && exit 1)
           else
             echo "No Python files to verify"
           fi

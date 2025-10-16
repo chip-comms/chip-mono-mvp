@@ -27,8 +27,23 @@ class MockTranscriptionService:
         time.sleep(0.5)
 
         # Return realistic mock data
+        full_text = (
+            "This is a mock transcription. In a real implementation, this would "
+            "contain the actual transcribed text from the audio file. For now, "
+            "we're returning sample data to test the pipeline without heavy ML "
+            "dependencies."
+        )
+        segment2_text = (
+            "In a real implementation, this would contain the actual transcribed "
+            "text from the audio file."
+        )
+        segment3_text = (
+            "For now, we're returning sample data to test the pipeline without "
+            "heavy ML dependencies."
+        )
+
         return {
-            "text": "This is a mock transcription. In a real implementation, this would contain the actual transcribed text from the audio file. For now, we're returning sample data to test the pipeline without heavy ML dependencies.",
+            "text": full_text,
             "segments": [
                 {
                     "start": 0.0,
@@ -46,14 +61,14 @@ class MockTranscriptionService:
                 {
                     "start": 4.0,
                     "end": 10.5,
-                    "text": "In a real implementation, this would contain the actual transcribed text from the audio file.",
+                    "text": segment2_text,
                     "speaker": "SPEAKER_01",
                     "words": []
                 },
                 {
                     "start": 11.0,
                     "end": 16.0,
-                    "text": "For now, we're returning sample data to test the pipeline without heavy ML dependencies.",
+                    "text": segment3_text,
                     "speaker": "SPEAKER_00",
                     "words": []
                 }

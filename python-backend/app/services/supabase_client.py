@@ -14,13 +14,13 @@ class SupabaseClient:
 
         if not self.url or not self.service_key:
             raise ValueError("SUPABASE_URL and SUPABASE_SECRET_KEY must be set in environment")
-        
+
         self.headers = {
             "apikey": self.service_key,
             "Authorization": f"Bearer {self.service_key}",
             "Content-Type": "application/json"
         }
-    
+
     async def download_file(self, file_path: str) -> bytes:
         """Download file from Supabase Storage"""
         async with httpx.AsyncClient(timeout=300.0) as client:
@@ -30,7 +30,7 @@ class SupabaseClient:
             )
             response.raise_for_status()
             return response.content
-    
+
     async def update_job_status(self, job_id: str, status: str, error: Optional[str] = None):
         """Update processing job status"""
         data = {"status": status, "updated_at": "now()"}
@@ -49,7 +49,7 @@ class SupabaseClient:
             if response.status_code == 204 or not response.text:
                 return {"success": True}
             return response.json()
-    
+
     async def save_analysis_results(self, job_id: str, results: Dict[str, Any]):
         """Save analysis results to Supabase"""
         data = {
@@ -69,7 +69,7 @@ class SupabaseClient:
             if response.status_code == 201 or not response.text:
                 return {"success": True}
             return response.json()
-    
+
     async def get_job_status(self, job_id: str) -> Dict[str, Any]:
         """Get job status and details"""
         async with httpx.AsyncClient() as client:

@@ -34,6 +34,12 @@ Before you begin, ensure you have the following installed:
 
 - **Git** (required) - [Download here](https://git-scm.com/)
 
+Beau's recommendations
+
+- **Claude Code** with the following mcp's
+  - **Supabase MCP**
+  - **Linear MCP**
+
 ## Repository Structure
 
 This is a monorepo with three main components:
@@ -54,7 +60,7 @@ chip-mono-mvp/
 1. Frontend uploads files to Supabase Storage
 2. Database trigger calls Edge Function
 3. Edge Function calls Python Backend (local or production)
-4. Python Backend processes video/audio and saves results
+4. Python Backend processes video/audio and saves results in Supabase
 
 ## Quick Start
 
@@ -114,9 +120,12 @@ cd frontend
 # Create environment file
 cp .env.local.example .env.local
 
-# Edit .env.local with the following:
-# NEXT_PUBLIC_SUPABASE_URL=http://localhost:54321
-# NEXT_PUBLIC_SUPABASE_ANON_KEY=<get from Supabase Studio after starting>
+# Edit .env.local and set the environment to local
+# NEXT_PUBLIC_SUPABASE_ENV=local
+#
+# Local Supabase credentials (default values work out of the box):
+# NEXT_PUBLIC_SUPABASE_URL_LOCAL=http://localhost:54321
+# NEXT_PUBLIC_SUPABASE_ANON_KEY_LOCAL=<get from Supabase Studio after starting>
 
 # Install dependencies
 npm install
@@ -129,8 +138,9 @@ npm run dev
 
 **Environment Variables:**
 
-- `NEXT_PUBLIC_SUPABASE_URL` - Local Supabase API URL
-- `NEXT_PUBLIC_SUPABASE_ANON_KEY` - Anonymous/public API key
+- `NEXT_PUBLIC_SUPABASE_ENV` - Set to `local` for local development, `production` for production
+- `NEXT_PUBLIC_SUPABASE_URL_LOCAL` - Local Supabase API URL (http://localhost:54321)
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY_LOCAL` - Local anonymous/public API key from Supabase Studio
 
 ### 2. Supabase Setup
 
@@ -184,7 +194,7 @@ Supabase provides the database, authentication, storage, and edge functions.
 Create environment file for edge functions:
 
 ```bash
-cd supabase/functions
+cd supabase
 
 # Create .env.local file
 cat > .env.local << 'EOF'
@@ -193,16 +203,18 @@ PYTHON_BACKEND_URL=http://host.docker.internal:8000
 PYTHON_BACKEND_API_KEY=local-dev-key-not-needed
 EOF
 
-cd ../..
+cd ..
 ```
 
 **Start Edge Functions locally:**
 
 ```bash
 cd supabase
-supabase functions serve
+supabase functions serve --env-file .env.local
 cd ..
 ```
+
+**Important:** Edge Functions must be running for file processing to work. The database trigger calls the `process-meeting` Edge Function, which then calls the Python backend
 
 ### 3. Python Backend Setup (Docker)
 
@@ -227,9 +239,6 @@ SUPABASE_SECRET_KEY=<service_role_key_from_supabase_studio>
 # AI Provider API Key (get your own free key)
 GEMINI_API_KEY=your_gemini_api_key_here
 
-# Hugging Face Token (required for speaker diarization)
-HUGGINGFACE_TOKEN=your_huggingface_token_here
-
 # Server Configuration
 PORT=8080
 
@@ -245,9 +254,11 @@ API_KEY=local-dev-key
 
 This will:
 
-1. Build a Docker image with all ML dependencies (~2GB, takes 5-10 minutes first time)
+1. Build a Docker image with lightweight dependencies (~20 seconds first time)
 2. Start the container with hot-reloading enabled
 3. Mount your source code for live updates
+
+**Note:** For local development, the backend uses mock transcription to avoid heavy ML dependencies. Real ML processing (WhisperX, speaker diarization) is tracked in ticket CHI-22 and will be re-enabled when needed
 
 **Python Backend will be available at:** http://localhost:8000
 
@@ -290,7 +301,12 @@ docker-compose up -d
 
 **Free Tier:** 15 requests per minute, more than enough for development
 
-### HuggingFace Token (Required for Speaker Diarization)
+### HuggingFace Token (Optional - Not needed for local dev)
+
+**Note:** For local development, we use mock transcription, so HuggingFace token is not required. This will be needed when implementing real ML pipeline (ticket CHI-22).
+
+<details>
+<summary>Click to see instructions for when you need it</summary>
 
 1. Visit: https://huggingface.co/settings/tokens
 2. Sign up or log in
@@ -302,6 +318,8 @@ docker-compose up -d
 6. Paste token into `python-backend/.env.local`
 
 **Free Tier:** Unlimited usage for development
+
+</details>
 
 ### Supabase Credentials (Shared Dev Instance)
 

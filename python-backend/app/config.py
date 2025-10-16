@@ -18,21 +18,21 @@ elif env_file.exists():
 
 class Settings(BaseSettings):
     """Application settings."""
-    
+
     # Server
     host: str = os.getenv("HOST", "0.0.0.0")
     port: int = int(os.getenv("PORT", "8000"))
-    
+
     # Storage
     upload_dir: Path = Path(os.getenv("UPLOAD_DIR", "./storage/uploads"))
     temp_dir: Path = Path(os.getenv("TEMP_DIR", "./storage/temp"))
-    
+
     # Limits
     max_file_size: int = int(os.getenv("MAX_FILE_SIZE", "500"))  # MB
-    
+
     # CORS
     cors_origins: str = os.getenv("CORS_ORIGINS", "http://localhost:3000")
-    
+
     # Supabase Configuration
     supabase_url: str = os.getenv("SUPABASE_URL", "")
     supabase_secret_key: str = os.getenv("SUPABASE_SECRET_KEY", "")
@@ -50,20 +50,20 @@ class Settings(BaseSettings):
         "AI_PROVIDER",
         "auto"
     )
-    
+
     class Config:
         env_file = ".env.local"  # Load from .env.local (falls back to .env)
-    
+
     def validate_ai_config(self) -> dict:
         """Validate AI configuration."""
         errors = []
-        
+
         if not self.openai_api_key and not self.gemini_api_key and not self.anthropic_api_key:
             errors.append(
                 "At least one AI provider API key is required "
                 "(OPENAI_API_KEY, GEMINI_API_KEY, or ANTHROPIC_API_KEY)"
             )
-        
+
         return {
             "valid": len(errors) == 0,
             "errors": errors,
@@ -79,4 +79,3 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
-

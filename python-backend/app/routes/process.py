@@ -2,15 +2,13 @@
 Process endpoint for handling video/audio processing jobs from Next.js frontend.
 """
 
-import os
 import sys
-import asyncio
 import tempfile
 import httpx
 import logging
 from pathlib import Path
 from typing import Dict, Any
-from fastapi import APIRouter, HTTPException, BackgroundTasks, Header
+from fastapi import APIRouter, HTTPException, BackgroundTasks
 from pydantic import BaseModel
 
 from app.services.supabase_client import SupabaseClient
@@ -116,14 +114,20 @@ async def process_job_task(
             analysis_result = await llm_adapter.analyze_transcript(transcript_text)
 
             # Convert AnalysisResult to dict format expected by database
+            key_topics = [topic.topic for topic in analysis_result.key_topics] \
+                if analysis_result.key_topics else []
+            action_items = [
+                {"text": item.text, "priority": item.priority}
+                for item in analysis_result.action_items
+            ] if analysis_result.action_items else []
+            effectiveness = int(analysis_result.sentiment.score * 100) \
+                if analysis_result.sentiment else 50
+
             analysis_data = {
                 "summary": analysis_result.summary,
-                "key_topics": [topic.topic for topic in analysis_result.key_topics] if analysis_result.key_topics else [],
-                "action_items": [
-                    {"text": item.text, "priority": item.priority}
-                    for item in analysis_result.action_items
-                ] if analysis_result.action_items else [],
-                "effectiveness_score": int(analysis_result.sentiment.score * 100) if analysis_result.sentiment else 50
+                "key_topics": key_topics,
+                "action_items": action_items,
+                "effectiveness_score": effectiveness
             }
         except Exception as llm_error:
             logger.warning(f"[Job {job_id}] LLM analysis failed: {str(llm_error)}, using fallback")
