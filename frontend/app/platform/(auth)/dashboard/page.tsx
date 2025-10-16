@@ -79,6 +79,7 @@ export default function DashboardPage() {
       const now = new Date();
       const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
       const thisMonth = completedJobs.filter((job) => {
+        if (!job.created_at) return false;
         const createdAt = new Date(job.created_at);
         return createdAt >= firstDayOfMonth;
       }).length;
