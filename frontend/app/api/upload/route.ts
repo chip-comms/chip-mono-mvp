@@ -10,6 +10,9 @@ import {
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
+// Configure body size limit for this route (50MB)
+export const maxDuration = 300; // 5 minutes timeout
+
 /**
  * POST /api/upload
  * Handles file upload to Supabase Storage and creates processing job

@@ -171,6 +171,14 @@ if [ -z "$HUGGINGFACE_TOKEN" ]; then
     warn "HUGGINGFACE_TOKEN not set in .env.deploy (diarization will be disabled)"
 fi
 
+if [ -z "$ASSEMBLYAI_API_KEY" ]; then
+    warn "ASSEMBLYAI_API_KEY not set in .env.deploy (transcription will use mock provider)"
+fi
+
+if [ -z "$TRANSCRIPTION_PROVIDER" ]; then
+    warn "TRANSCRIPTION_PROVIDER not set in .env.deploy (defaulting to mock)"
+fi
+
 echo ""
 echo "Creating/updating secrets in Google Secret Manager..."
 
@@ -214,10 +222,21 @@ if [ ! -z "$HUGGINGFACE_TOKEN" ]; then
     fi
 fi
 
+# AssemblyAI API Key
+if [ ! -z "$ASSEMBLYAI_API_KEY" ]; then
+    if gcloud secrets describe assemblyai-api-key &>/dev/null; then
+        echo -n "$ASSEMBLYAI_API_KEY" | gcloud secrets versions add assemblyai-api-key --data-file=-
+        info "Updated secret 'assemblyai-api-key'"
+    else
+        echo -n "$ASSEMBLYAI_API_KEY" | gcloud secrets create assemblyai-api-key --data-file=-
+        info "Created secret 'assemblyai-api-key'"
+    fi
+fi
+
 # Grant secret access to Cloud Run service account
 echo ""
 echo "Granting secret access to Cloud Run service account..."
-for SECRET in supabase-url supabase-service-role-key gemini-api-key huggingface-token; do
+for SECRET in supabase-url supabase-service-role-key gemini-api-key huggingface-token assemblyai-api-key; do
     if gcloud secrets describe $SECRET &>/dev/null; then
         gcloud secrets add-iam-policy-binding $SECRET \
           --member="serviceAccount:${PROJECT_NUMBER}-compute@developer.gserviceaccount.com" \
@@ -281,8 +300,8 @@ gcloud run deploy meeting-intelligence-backend \
   --timeout 300s \
   --min-instances 0 \
   --max-instances 10 \
-  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest,API_KEY=python-backend-api-key:latest,HUGGINGFACE_TOKEN=huggingface-token:latest" \
-  --set-env-vars "AI_PROVIDER=gemini" \
+  --set-secrets "SUPABASE_URL=supabase-url:latest,SUPABASE_SECRET_KEY=supabase-service-role-key:latest,GEMINI_API_KEY=gemini-api-key:latest,API_KEY=python-backend-api-key:latest,HUGGINGFACE_TOKEN=huggingface-token:latest,ASSEMBLYAI_API_KEY=assemblyai-api-key:latest" \
+  --set-env-vars "AI_PROVIDER=gemini,TRANSCRIPTION_PROVIDER=assemblyai" \
   --quiet
 
 ###############################################################################
