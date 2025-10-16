@@ -6,7 +6,9 @@ import {
   formatFileSize,
   FORMAT_DESCRIPTIONS,
   MAX_FILE_SIZE_MB,
+  getFileExtension,
 } from '@/lib/upload-constants';
+import { createClient } from '@/lib/supabase';
 
 interface UploadResponse {
   success: boolean;
@@ -89,10 +91,32 @@ export default function FileUploadZone({
     setUploadProgress(0);
 
     try {
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      // Get Supabase client
+      const supabase = createClient();
 
-      // Simulate progress (actual upload progress requires XHR or custom fetch wrapper)
+      // Get current user
+      const {
+        data: { user },
+        error: authError,
+      } = await supabase.auth.getUser();
+
+      if (authError || !user) {
+        throw new Error('You must be logged in to upload files');
+      }
+
+      // Generate unique job ID using browser crypto API
+      const jobId = crypto.randomUUID();
+
+      // Generate storage path
+      const now = new Date();
+      const year = now.getFullYear();
+      const month = String(now.getMonth() + 1).padStart(2, '0');
+      const ext = getFileExtension(selectedFile.name);
+      const storagePath = `${user.id}/${year}/${month}/${jobId}.${ext}`;
+
+      console.log('Uploading directly to Supabase Storage:', storagePath);
+
+      // Simulate progress
       const progressInterval = setInterval(() => {
         setUploadProgress((prev) => {
           if (prev >= 90) {
@@ -103,9 +127,35 @@ export default function FileUploadZone({
         });
       }, 200);
 
+      // Upload file directly to Supabase Storage
+      const { data: uploadData, error: uploadError } = await supabase.storage
+        .from('recordings')
+        .upload(storagePath, selectedFile, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        clearInterval(progressInterval);
+        throw new Error(`Upload failed: ${uploadError.message}`);
+      }
+
+      console.log('Upload successful:', uploadData);
+
+      // Create processing job record via API
+      const fileSizeMB = Number((selectedFile.size / (1024 * 1024)).toFixed(2));
+
       const response = await fetch('/api/upload', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jobId,
+          storagePath,
+          originalFilename: selectedFile.name,
+          fileSizeMB,
+        }),
       });
 
       clearInterval(progressInterval);
@@ -114,7 +164,9 @@ export default function FileUploadZone({
       const data: UploadResponse = await response.json();
 
       if (!response.ok || !data.success) {
-        throw new Error(data.message || 'Upload failed');
+        // If job creation failed, try to clean up uploaded file
+        await supabase.storage.from('recordings').remove([storagePath]);
+        throw new Error(data.message || 'Failed to create processing job');
       }
 
       // Success!
@@ -130,6 +182,7 @@ export default function FileUploadZone({
       }, 1500);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Upload failed';
+      console.error('Upload error:', err);
       setError(errorMessage);
       setUploadProgress(0);
       setIsUploading(false);
