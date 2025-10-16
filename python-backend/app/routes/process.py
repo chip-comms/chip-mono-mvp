@@ -111,29 +111,27 @@ async def process_job_task(
         # Generate summary and insights from transcript
         transcript_text = transcription_result.get('text', '')
 
-        # Create analysis prompt
-        analysis_prompt = f"""Analyze this meeting transcript and provide:
-1. A concise summary (2-3 paragraphs)
-2. Key topics discussed
-3. Action items identified
-4. Overall meeting effectiveness
-
-Transcript:
-{transcript_text}
-
-Provide your response in JSON format with keys: summary, key_topics (array), action_items (array), effectiveness_score (0-100)"""
-
-        analysis_response = await llm_adapter.generate(analysis_prompt)
-
-        # Parse AI response (this is simplified - you may want to add better parsing)
-        import json
+        # Use the analyze_transcript method from LLM adapter
         try:
-            analysis_data = json.loads(analysis_response)
-        except json.JSONDecodeError:
-            # Fallback if AI doesn't return valid JSON
+            analysis_result = await llm_adapter.analyze_transcript(transcript_text)
+
+            # Convert AnalysisResult to dict format expected by database
             analysis_data = {
-                "summary": analysis_response[:500],
-                "key_topics": [],
+                "summary": analysis_result.summary,
+                "key_topics": [topic.topic for topic in analysis_result.key_topics] if analysis_result.key_topics else [],
+                "action_items": [
+                    {"text": item.text, "priority": item.priority}
+                    for item in analysis_result.action_items
+                ] if analysis_result.action_items else [],
+                "effectiveness_score": int(analysis_result.sentiment.score * 100) if analysis_result.sentiment else 50
+            }
+        except Exception as llm_error:
+            logger.warning(f"[Job {job_id}] LLM analysis failed: {str(llm_error)}, using fallback")
+            sys.stdout.flush()
+            # Fallback analysis if LLM fails
+            analysis_data = {
+                "summary": f"Meeting transcript analyzed with {len(transcript_text.split())} words.",
+                "key_topics": ["General Discussion"],
                 "action_items": [],
                 "effectiveness_score": 50
             }

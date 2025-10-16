@@ -1,4 +1,8 @@
-"""Video processing endpoints."""
+"""Video processing endpoints.
+
+TODO (CHI-22): Re-enable when implementing real ML pipeline.
+These endpoints require ffmpeg and PIL which are disabled for local development.
+"""
 
 import os
 import tempfile
@@ -7,8 +11,8 @@ from typing import Optional
 
 from fastapi import APIRouter, File, UploadFile, HTTPException, Form
 from fastapi.responses import FileResponse
-import ffmpeg
-from PIL import Image
+# import ffmpeg  # TODO (CHI-22): Re-enable for real ML pipeline
+# from PIL import Image  # TODO (CHI-22): Re-enable for real ML pipeline
 
 from app.config import settings
 

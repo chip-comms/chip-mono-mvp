@@ -1,6 +1,9 @@
 """
 Meeting analysis endpoint that orchestrates the full AI pipeline.
 This endpoint handles the complete sequence from video download to result storage.
+
+TODO (CHI-22): Re-enable ffmpeg imports when implementing real ML pipeline.
+For now, audio extraction is handled by mock transcription service.
 """
 
 from fastapi import APIRouter, HTTPException, BackgroundTasks
@@ -10,7 +13,7 @@ import tempfile
 import os
 import asyncio
 from pathlib import Path
-import ffmpeg
+# import ffmpeg  # TODO (CHI-22): Re-enable for real ML pipeline
 
 # Import existing services
 from app.services.supabase_client import SupabaseClient
@@ -52,23 +55,25 @@ async def process_meeting_analysis(video_url: str, job_id: str):
         print(f"[{job_id}] Video downloaded and saved to temp file")
         
         # Step 2: Extract audio from video (reuse existing functionality)
+        # TODO (CHI-22): Re-enable audio extraction for real ML pipeline
+        # For now, mock transcription service doesn't actually process audio
         temp_audio = tempfile.NamedTemporaryFile(delete=False, suffix='.wav')
         temp_audio.close()
         temp_files.append(temp_audio.name)
-        
-        print(f"[{job_id}] Extracting audio...")
+
+        print(f"[{job_id}] Skipping audio extraction (using mock transcription)")
         # Use ffmpeg to extract audio (reusing existing video processing logic)
-        try:
-            ffmpeg.input(temp_video.name).output(
-                temp_audio.name,
-                acodec="pcm_s16le",
-                ac=1,  # Mono
-                ar="16000",  # 16kHz sample rate
-            ).overwrite_output().run(capture_stdout=True, capture_stderr=True)
-        except ffmpeg.Error as e:
-            raise Exception(f"Audio extraction failed: {e}")
-        
-        print(f"[{job_id}] Audio extracted successfully")
+        # try:
+        #     ffmpeg.input(temp_video.name).output(
+        #         temp_audio.name,
+        #         acodec="pcm_s16le",
+        #         ac=1,  # Mono
+        #         ar="16000",  # 16kHz sample rate
+        #     ).overwrite_output().run(capture_stdout=True, capture_stderr=True)
+        # except ffmpeg.Error as e:
+        #     raise Exception(f"Audio extraction failed: {e}")
+
+        # print(f"[{job_id}] Audio extracted successfully")
         
         # Step 3: Transcribe audio (reuse existing transcription service)
         print(f"[{job_id}] Starting transcription...")

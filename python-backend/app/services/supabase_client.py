@@ -56,7 +56,7 @@ class SupabaseClient:
             "job_id": job_id,
             **results
         }
-        
+
         async with httpx.AsyncClient() as client:
             response = await client.post(
                 f"{self.url}/rest/v1/meeting_analysis",
@@ -64,6 +64,10 @@ class SupabaseClient:
                 headers=self.headers
             )
             response.raise_for_status()
+            # Supabase returns 201 Created with empty body or Location header
+            # Only try to parse JSON if there's content
+            if response.status_code == 201 or not response.text:
+                return {"success": True}
             return response.json()
     
     async def get_job_status(self, job_id: str) -> Dict[str, Any]:
