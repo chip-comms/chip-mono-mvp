@@ -2,10 +2,16 @@
 
 import FileUploadZone from '@/components/FileUploadZone';
 import RecordingsList from '@/components/RecordingsList';
+import AnalysisPanel from '@/components/AnalysisPanel';
 import { useState } from 'react';
 
 export default function DashboardPage() {
   const [uploadSuccess, setUploadSuccess] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [selectedAnalysisJob, setSelectedAnalysisJob] = useState<{
+    jobId: string;
+    filename: string;
+  } | null>(null);
 
   const handleUploadComplete = (response: {
     jobId?: string;
@@ -13,6 +19,8 @@ export default function DashboardPage() {
   }) => {
     console.log('Upload complete:', response);
     setUploadSuccess(true);
+    // Trigger recordings list refresh
+    setRefreshTrigger((prev) => prev + 1);
     // Reset success message after 5 seconds
     setTimeout(() => setUploadSuccess(false), 5000);
   };
@@ -60,7 +68,20 @@ export default function DashboardPage() {
       </div>
 
       {/* Recordings List */}
-      <RecordingsList />
+      <RecordingsList
+        onViewAnalysis={setSelectedAnalysisJob}
+        refreshTrigger={refreshTrigger}
+      />
+
+      {/* Analysis Panel */}
+      {selectedAnalysisJob && (
+        <AnalysisPanel
+          isOpen={true}
+          onClose={() => setSelectedAnalysisJob(null)}
+          jobId={selectedAnalysisJob.jobId}
+          filename={selectedAnalysisJob.filename}
+        />
+      )}
     </div>
   );
 }

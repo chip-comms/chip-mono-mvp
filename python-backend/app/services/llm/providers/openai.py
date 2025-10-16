@@ -129,7 +129,10 @@ Provide only valid JSON, no other text.
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert meeting analyst. Provide analysis in valid JSON format only.",
+                        "content": (
+                            "You are an expert meeting analyst. "
+                            "Provide analysis in valid JSON format only."
+                        ),
                     },
                     {"role": "user", "content": prompt},
                 ],
@@ -173,50 +176,61 @@ Provide only valid JSON, no other text.
             logger.error(f"OpenAI analysis error: {error}")
             raise Exception(f"Failed to analyze transcript with OpenAI: {str(error)}")
 
-    async def generate_communication_insights(
+    async def generate_speaker_communication_tips(
         self,
-        transcript_text: str,
+        speaker_label: str,
         talk_time_percentage: float,
-        interruptions: int,
-        num_speakers: int,
-        duration_minutes: float,
-    ) -> str:
+        word_count: int,
+        segments_count: int,
+        avg_response_latency: float,
+        times_interrupted: int,
+        times_interrupting: int,
+        total_speakers: int,
+        meeting_duration_minutes: float,
+    ) -> List[str]:
         """
-        Generate communication insights using GPT-4.
+        Generate actionable communication tips for a specific speaker.
 
         Args:
-            transcript_text: Full transcript
-            talk_time_percentage: % of time spent talking
-            interruptions: Number of interruptions
-            num_speakers: Number of speakers
-            duration_minutes: Meeting duration
+            speaker_label: Speaker identifier
+            talk_time_percentage: % of meeting time this speaker talked
+            word_count: Total words spoken
+            segments_count: Number of speaking segments
+            avg_response_latency: Average gap before responding
+            times_interrupted: Times this speaker was interrupted
+            times_interrupting: Times this speaker interrupted others
+            total_speakers: Total speakers in meeting
+            meeting_duration_minutes: Total meeting duration
 
         Returns:
-            2-3 sentences of communication insights
+            List of 2-3 actionable tips
         """
         try:
             client = self._get_client()
 
-            truncated_text = self.truncate_transcript(transcript_text, 30000)
-
             prompt = f"""
-Analyze the communication patterns in this meeting transcript and provide insights.
+Generate 2-3 specific, actionable communication tips for {speaker_label} based on \
+their behavior in this meeting.
 
-TRANSCRIPT:
-{truncated_text}
+SPEAKER METRICS:
+- Talk time: {talk_time_percentage:.1f}% of meeting
+- Word count: {word_count} words
+- Speaking segments: {segments_count}
+- Average response time: {avg_response_latency:.2f} seconds
+- Times interrupted by others: {times_interrupted}
+- Times interrupted others: {times_interrupting}
+- Total speakers: {total_speakers}
+- Meeting duration: {meeting_duration_minutes:.0f} minutes
 
-COMMUNICATION METRICS:
-- Talk time percentage: {talk_time_percentage}%
-- Number of interruptions: {interruptions}
-- Number of speakers: {num_speakers}
-- Meeting duration: {duration_minutes:.0f} minutes
+GUIDELINES:
+- Focus on communication skills and conversational dynamics
+- Be specific and actionable (e.g., "Try X" not "Consider doing better")
+- Be constructive and encouraging
+- Address the most significant patterns first
+- Each tip should be 1 sentence
 
-Provide 2-3 sentences with actionable communication insights focusing on:
-1. Speaking time balance
-2. Interaction patterns
-3. Recommendations for improvement
-
-Be concise and constructive.
+Return ONLY a JSON array of 2-3 tip strings. Example:
+["Tip 1 here", "Tip 2 here", "Tip 3 here"]
 """
 
             response = await client.chat.completions.create(
@@ -224,19 +238,39 @@ Be concise and constructive.
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are an expert communication coach.",
+                        "content": (
+                            "You are an expert communication coach. "
+                            "Return only valid JSON arrays."
+                        ),
                     },
                     {"role": "user", "content": prompt},
                 ],
                 temperature=0.7,
-                max_tokens=200,
+                max_tokens=300,
             )
 
-            return response.choices[0].message.content.strip()
+            content = response.choices[0].message.content
+            if not content:
+                raise Exception("No response from GPT-4")
+
+            # Parse JSON array
+            tips = json.loads(content.strip())
+
+            if not isinstance(tips, list):
+                return [
+                    "Focus on balanced participation in meetings.",
+                    "Practice active listening and timely responses.",
+                ]
+
+            return tips[:3]  # Limit to 3 tips
 
         except Exception as error:
-            logger.error(f"OpenAI insights error: {error}")
-            return "Unable to generate communication insights at this time."
+            logger.error(f"OpenAI speaker tips error for {speaker_label}: {error}")
+            # Return generic fallback tips
+            return [
+                "Focus on balanced participation in meetings.",
+                "Practice active listening and timely responses.",
+            ]
 
     def _parse_values_alignment(self, data: dict) -> CompanyValuesAlignment:
         """Parse company values alignment from JSON."""

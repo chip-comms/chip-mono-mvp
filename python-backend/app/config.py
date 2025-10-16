@@ -42,8 +42,11 @@ class Settings(BaseSettings):
     gemini_api_key: str = os.getenv("GEMINI_API_KEY", "")
     anthropic_api_key: str = os.getenv("ANTHROPIC_API_KEY", "")
 
-    # Hugging Face Token (for speaker diarization)
-    huggingface_token: str = os.getenv("HUGGINGFACE_TOKEN", "")
+    # Transcription Provider Configuration
+    assemblyai_api_key: str = os.getenv("ASSEMBLYAI_API_KEY", "")
+    transcription_provider: Literal["assemblyai", "mock"] = os.getenv(
+        "TRANSCRIPTION_PROVIDER", "assemblyai"
+    )
 
     # Preferred AI provider (auto, openai, gemini, anthropic)
     ai_provider: Literal["auto", "openai", "gemini", "anthropic"] = os.getenv(
