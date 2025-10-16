@@ -21,6 +21,7 @@ export type Database = {
           created_at: string | null;
           id: string;
           job_id: string;
+          speaker_assignment: Json | null;
           speaker_stats: Json | null;
           summary: string | null;
           transcript: Json | null;
@@ -32,6 +33,7 @@ export type Database = {
           created_at?: string | null;
           id?: string;
           job_id: string;
+          speaker_assignment?: Json | null;
           speaker_stats?: Json | null;
           summary?: string | null;
           transcript?: Json | null;
@@ -43,6 +45,7 @@ export type Database = {
           created_at?: string | null;
           id?: string;
           job_id?: string;
+          speaker_assignment?: Json | null;
           speaker_stats?: Json | null;
           summary?: string | null;
           transcript?: Json | null;
