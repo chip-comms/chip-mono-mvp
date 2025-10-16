@@ -7,7 +7,7 @@ Handles both transcription and diarization in a single API call.
 
 import logging
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Any
 import assemblyai as aai
 
 from .base import (
@@ -201,8 +201,11 @@ class AssemblyAIProvider(BaseTranscriptionProvider):
         duration = transcript.audio_duration or 0.0
 
         # Get detected language (handle different attribute names)
-        language = getattr(transcript, 'language_code', None) or \
-                   getattr(transcript, 'language', None) or "en"
+        language = (
+            getattr(transcript, "language_code", None)
+            or getattr(transcript, "language", None)
+            or "en"
+        )
 
         return TranscriptionResult(
             text=full_text,

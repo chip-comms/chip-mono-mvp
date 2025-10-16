@@ -307,6 +307,7 @@ gcloud run deploy meeting-intelligence-backend \
 **Transcription Provider Architecture:**
 
 The backend uses a provider pattern for transcription (similar to LLM adapter):
+
 - `AssemblyAIProvider` - Production API (transcription + diarization in one call)
 - `MockProvider` - Local development without API key
 

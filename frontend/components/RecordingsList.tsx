@@ -24,7 +24,10 @@ interface RecordingsListProps {
   refreshTrigger?: number;
 }
 
-export default function RecordingsList({ onViewAnalysis, refreshTrigger }: RecordingsListProps) {
+export default function RecordingsList({
+  onViewAnalysis,
+  refreshTrigger,
+}: RecordingsListProps) {
   const [recordings, setRecordings] = useState<Recording[]>([]);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [isLoading, setIsLoading] = useState(true);

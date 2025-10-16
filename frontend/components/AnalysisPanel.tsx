@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@/lib/supabase';
 
 interface AnalysisPanelProps {
@@ -60,13 +60,7 @@ export default function AnalysisPanel({
     'summary' | 'transcript' | 'speakers' | 'metrics'
   >('summary');
 
-  useEffect(() => {
-    if (isOpen && jobId) {
-      fetchAnalysis();
-    }
-  }, [isOpen, jobId]);
-
-  const fetchAnalysis = async () => {
+  const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
     setError(null);
 
@@ -88,7 +82,13 @@ export default function AnalysisPanel({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [jobId]);
+
+  useEffect(() => {
+    if (isOpen && jobId) {
+      fetchAnalysis();
+    }
+  }, [isOpen, jobId, fetchAnalysis]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -259,7 +259,8 @@ export default function AnalysisPanel({
                           {segment.speaker}
                         </span>
                         <span className="text-xs text-gray-500">
-                          {formatTime(segment.start)} - {formatTime(segment.end)}
+                          {formatTime(segment.start)} -{' '}
+                          {formatTime(segment.end)}
                         </span>
                       </div>
                       <p className="text-gray-700">{segment.text}</p>

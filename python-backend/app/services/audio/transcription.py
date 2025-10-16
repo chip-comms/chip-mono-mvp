@@ -15,7 +15,6 @@ import os
 
 from .providers import (
     TranscriptionProvider,
-    TranscriptionResult,
     AssemblyAIProvider,
     MockProvider,
 )
@@ -42,13 +41,18 @@ class TranscriptionService:
             provider: Provider name ('assemblyai' or 'mock'). Auto-detected if None.
             api_key: API key for the provider. Auto-detected from env if None.
         """
-        self.provider_name = provider or os.getenv("TRANSCRIPTION_PROVIDER", "assemblyai")
+        self.provider_name = provider or os.getenv(
+            "TRANSCRIPTION_PROVIDER", "assemblyai"
+        )
         self.api_key = api_key or os.getenv("ASSEMBLYAI_API_KEY")
 
         # Initialize the appropriate provider
         self.provider = self._init_provider()
 
-        logger.info(f"🎙️  Transcription service initialized with provider: {self.provider.name}")
+        logger.info(
+            f"🎙️  Transcription service initialized with "
+            f"provider: {self.provider.name}"
+        )
 
     def _init_provider(self) -> TranscriptionProvider:
         """
@@ -65,8 +69,9 @@ class TranscriptionService:
         if provider_name == "assemblyai":
             if not self.api_key:
                 logger.warning(
-                    "AssemblyAI API key not found. Falling back to mock provider. "
-                    "Set ASSEMBLYAI_API_KEY environment variable to use real transcription."
+                    "AssemblyAI API key not found. Falling back to mock "
+                    "provider. Set ASSEMBLYAI_API_KEY environment variable "
+                    "to use real transcription."
                 )
                 return MockProvider()
             return AssemblyAIProvider(api_key=self.api_key)

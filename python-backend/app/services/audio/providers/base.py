@@ -39,7 +39,8 @@ class TranscriptionProvider(ABC):
     """
     Abstract base class for transcription providers.
 
-    All transcription providers (AssemblyAI, Deepgram, etc.) must implement this interface.
+    All transcription providers (AssemblyAI, Deepgram, etc.) must
+    implement this interface.
     """
 
     @property
