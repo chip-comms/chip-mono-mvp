@@ -42,6 +42,7 @@ interface MeetingAnalysis {
   summary: string | null;
   speaker_stats: Record<string, SpeakerStat>;
   communication_metrics: null; // Deprecated - metrics now in speaker_stats
+  speaker_assignment: Record<string, string> | null; // Maps speaker label to user_id or custom name
 }
 
 export default function AnalysisPanel({
@@ -54,8 +55,13 @@ export default function AnalysisPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'transcript' | 'speakers'>(
-    'transcript'
+    'speakers'
   );
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [currentUserName, setCurrentUserName] = useState<string>('You');
+  const [editingSpeaker, setEditingSpeaker] = useState<string | null>(null);
+  const [customName, setCustomName] = useState<string>('');
 
   const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
@@ -63,6 +69,25 @@ export default function AnalysisPanel({
 
     try {
       const supabase = createClient();
+
+      // Get current user info
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (user) {
+        setCurrentUserId(user.id);
+
+        // Fetch user's full name from users table
+        const { data: userData } = await supabase
+          .from('users')
+          .select('full_name')
+          .eq('id', user.id)
+          .single();
+
+        if (userData?.full_name) {
+          setCurrentUserName(userData.full_name);
+        }
+      }
 
       const { data, error: fetchError } = await supabase
         .from('meeting_analysis')
@@ -74,7 +99,6 @@ export default function AnalysisPanel({
 
       setAnalysis(data as unknown as MeetingAnalysis);
     } catch (err) {
-      console.error('Error fetching analysis:', err);
       setError('Failed to load analysis. Please try again.');
     } finally {
       setIsLoading(false);
@@ -86,6 +110,109 @@ export default function AnalysisPanel({
       fetchAnalysis();
     }
   }, [isOpen, jobId, fetchAnalysis]);
+
+  const handleAssignSpeaker = async (speakerLabel: string) => {
+    if (!currentUserId || !analysis) return;
+
+    setIsAssigning(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+
+      // Get current speaker_assignment or initialize empty object
+      const currentAssignment = analysis.speaker_assignment || {};
+
+      // Update the assignment for this speaker
+      const updatedAssignment = {
+        ...currentAssignment,
+        [speakerLabel]: currentUserId,
+      };
+
+      // Update the database
+      const { error: updateError } = await supabase
+        .from('meeting_analysis')
+        .update({ speaker_assignment: updatedAssignment })
+        .eq('job_id', jobId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setAnalysis({
+        ...analysis,
+        speaker_assignment: updatedAssignment,
+      });
+    } catch (err) {
+      setError('Failed to assign speaker. Please try again.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleAssignCustomName = async (speakerLabel: string, name: string) => {
+    if (!analysis || !name.trim()) return;
+
+    setIsAssigning(true);
+    setError(null);
+
+    try {
+      const supabase = createClient();
+
+      // Get current speaker_assignment or initialize empty object
+      const currentAssignment = analysis.speaker_assignment || {};
+
+      // Update the assignment for this speaker with custom name
+      const updatedAssignment = {
+        ...currentAssignment,
+        [speakerLabel]: name.trim(),
+      };
+
+      // Update the database
+      const { error: updateError } = await supabase
+        .from('meeting_analysis')
+        .update({ speaker_assignment: updatedAssignment })
+        .eq('job_id', jobId);
+
+      if (updateError) throw updateError;
+
+      // Update local state
+      setAnalysis({
+        ...analysis,
+        speaker_assignment: updatedAssignment,
+      });
+
+      // Clear editing state
+      setEditingSpeaker(null);
+      setCustomName('');
+    } catch (err) {
+      setError('Failed to assign name. Please try again.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const getSpeakerDisplayName = (speakerLabel: string): string => {
+    const assignment = analysis?.speaker_assignment;
+    if (assignment && assignment[speakerLabel]) {
+      // If assigned to current user, show their name
+      if (assignment[speakerLabel] === currentUserId) {
+        return currentUserName;
+      }
+      // Otherwise, show the custom name
+      return assignment[speakerLabel];
+    }
+    return speakerLabel;
+  };
+
+  const isSpeakerAssignedToMe = (speakerLabel: string): boolean => {
+    const assignment = analysis?.speaker_assignment;
+    return !!assignment && assignment[speakerLabel] === currentUserId;
+  };
+
+  const isSpeakerAssigned = (speakerLabel: string): boolean => {
+    const assignment = analysis?.speaker_assignment;
+    return !!assignment && !!assignment[speakerLabel];
+  };
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -192,23 +319,39 @@ export default function AnalysisPanel({
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
                     Full Transcript
                   </h3>
-                  {analysis.transcript.segments.map((segment, idx) => (
-                    <div
-                      key={idx}
-                      className="border-l-4 border-blue-500 pl-4 py-2"
-                    >
-                      <div className="flex items-center justify-between mb-1">
-                        <span className="text-sm font-semibold text-blue-600">
-                          {segment.speaker}
-                        </span>
-                        <span className="text-xs text-gray-500">
-                          {formatTime(segment.start)} -{' '}
-                          {formatTime(segment.end)}
-                        </span>
+                  {analysis.transcript.segments.map((segment, idx) => {
+                    const isMe = isSpeakerAssignedToMe(segment.speaker);
+                    return (
+                      <div
+                        key={idx}
+                        className={`border-l-4 pl-4 py-2 ${
+                          isMe
+                            ? 'border-green-500 bg-green-50'
+                            : 'border-blue-500'
+                        }`}
+                      >
+                        <div className="flex items-center justify-between mb-1">
+                          <span
+                            className={`text-sm font-semibold ${
+                              isMe ? 'text-green-700' : 'text-blue-600'
+                            }`}
+                          >
+                            {getSpeakerDisplayName(segment.speaker)}
+                            {isMe && (
+                              <span className="ml-2 text-xs bg-green-200 text-green-800 px-2 py-0.5 rounded-full">
+                                You
+                              </span>
+                            )}
+                          </span>
+                          <span className="text-xs text-gray-500">
+                            {formatTime(segment.start)} -{' '}
+                            {formatTime(segment.end)}
+                          </span>
+                        </div>
+                        <p className="text-gray-700">{segment.text}</p>
                       </div>
-                      <p className="text-gray-700">{segment.text}</p>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )}
 
@@ -219,11 +362,106 @@ export default function AnalysisPanel({
                     Speaker Statistics & Metrics
                   </h3>
                   {Object.entries(analysis.speaker_stats).map(
-                    ([speaker, stats]) => (
-                      <div key={speaker} className="bg-gray-50 rounded-lg p-4">
-                        <h4 className="text-md font-semibold text-gray-900 mb-3">
-                          {speaker}
-                        </h4>
+                    ([speaker, stats]) => {
+                      const isMe = isSpeakerAssignedToMe(speaker);
+                      return (
+                        <div
+                          key={speaker}
+                          className={`rounded-lg p-4 ${
+                            isMe ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-50'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between mb-3">
+                            <h4
+                              className={`text-md font-semibold ${
+                                isMe ? 'text-green-900' : 'text-gray-900'
+                              }`}
+                            >
+                              {getSpeakerDisplayName(speaker)}
+                              {isMe && (
+                                <span className="ml-2 text-xs bg-green-200 text-green-800 px-2 py-1 rounded-full">
+                                  You
+                                </span>
+                              )}
+                            </h4>
+                            <div className="flex items-center gap-2">
+                              {!isMe && !isSpeakerAssigned(speaker) && (
+                                <>
+                                  <button
+                                    onClick={() => handleAssignSpeaker(speaker)}
+                                    disabled={isAssigning}
+                                    className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    {isAssigning ? 'Assigning...' : 'This is me'}
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setEditingSpeaker(speaker);
+                                      setCustomName('');
+                                    }}
+                                    disabled={isAssigning}
+                                    className="text-xs px-3 py-1.5 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                  >
+                                    Assign name
+                                  </button>
+                                </>
+                              )}
+                              {!isMe && isSpeakerAssigned(speaker) && (
+                                <button
+                                  onClick={() => {
+                                    setEditingSpeaker(speaker);
+                                    setCustomName(getSpeakerDisplayName(speaker));
+                                  }}
+                                  disabled={isAssigning}
+                                  className="text-xs px-3 py-1.5 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Edit name
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                          {editingSpeaker === speaker && (
+                            <div className="mb-3 p-3 bg-white border border-gray-200 rounded-md">
+                              <label className="block text-xs text-gray-700 mb-2">
+                                Enter speaker name:
+                              </label>
+                              <div className="flex gap-2">
+                                <input
+                                  type="text"
+                                  value={customName}
+                                  onChange={(e) => setCustomName(e.target.value)}
+                                  onKeyDown={(e) => {
+                                    if (e.key === 'Enter') {
+                                      handleAssignCustomName(speaker, customName);
+                                    } else if (e.key === 'Escape') {
+                                      setEditingSpeaker(null);
+                                      setCustomName('');
+                                    }
+                                  }}
+                                  placeholder="e.g., John Smith"
+                                  className="flex-1 text-sm px-3 py-1.5 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  autoFocus
+                                />
+                                <button
+                                  onClick={() => handleAssignCustomName(speaker, customName)}
+                                  disabled={isAssigning || !customName.trim()}
+                                  className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setEditingSpeaker(null);
+                                    setCustomName('');
+                                  }}
+                                  disabled={isAssigning}
+                                  className="text-xs px-3 py-1.5 bg-gray-400 text-white rounded-md hover:bg-gray-500 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         <div className="space-y-2">
                           <div className="flex justify-between items-center">
                             <span className="text-sm text-gray-600">
@@ -346,8 +584,8 @@ export default function AnalysisPanel({
                             )}
                         </div>
                       </div>
-                    )
-                  )}
+                    );
+                  })}
                 </div>
               )}
             </>

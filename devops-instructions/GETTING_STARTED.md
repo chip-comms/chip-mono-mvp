@@ -76,11 +76,12 @@ npm run install:all
 # Copy examples and fill in your API keys
 cp frontend/.env.local.example frontend/.env.local
 cp python-backend/.env.local.example python-backend/.env.local
-cp supabase/functions/.env.example supabase/functions/.env
+cp supabase/.env.local supabase/functions/.env  # IMPORTANT: Must be in functions/ directory!
 
 # Edit the files with your keys (see "Getting API Keys" section)
-# - python-backend/.env.local: Add Gemini + HuggingFace keys
+# - python-backend/.env.local: Add Gemini + AssemblyAI keys
 # - frontend/.env.local: Will update after Supabase starts
+# - supabase/functions/.env: Already configured for local dev
 
 # 4. Start all services (automated!)
 ./devops-instructions/start-all.sh
@@ -194,27 +195,31 @@ Supabase provides the database, authentication, storage, and edge functions.
 Create environment file for edge functions:
 
 ```bash
-cd supabase
+cd supabase/functions
 
-# Create .env.local file
-cat > .env.local << 'EOF'
+# Create .env file (must be in the functions directory!)
+cat > .env << 'EOF'
 # Local Python Backend URL
 PYTHON_BACKEND_URL=http://host.docker.internal:8000
 PYTHON_BACKEND_API_KEY=local-dev-key-not-needed
 EOF
 
-cd ..
+cd ../..
 ```
 
-**Start Edge Functions locally:**
+**Important Notes:**
+- The `.env` file **must** be located at `supabase/functions/.env` (not `supabase/.env.local`)
+- This file is automatically loaded when you run `./db-ops.sh start` or `supabase start`
+- Edge Functions must be running for file processing to work
+- The database trigger calls the `process-meeting` Edge Function, which then calls the Python backend
+
+**Verify Edge Functions have environment variables:**
 
 ```bash
-cd supabase
-supabase functions serve --env-file .env.local
-cd ..
+# After starting Supabase, verify the env vars are loaded:
+docker exec supabase_edge_runtime_kfikvadshmptpwscgbyu env | grep PYTHON
+# Should show: PYTHON_BACKEND_URL and PYTHON_BACKEND_API_KEY
 ```
-
-**Important:** Edge Functions must be running for file processing to work. The database trigger calls the `process-meeting` Edge Function, which then calls the Python backend
 
 ### 3. Python Backend Setup (Docker)
 
