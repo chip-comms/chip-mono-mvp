@@ -63,6 +63,126 @@ async def download_file(url: str, destination: Path) -> None:
                     f.write(chunk)
 
 
+def calculate_response_latency(segments: list[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Calculate response latency metrics (gaps between speaker turns).
+
+    Args:
+        segments: List of transcription segments with start, end, and speaker
+
+    Returns:
+        Dictionary with:
+            - average_seconds: Average gap between speaker turns
+            - gaps: List of gap durations
+            - quick_responses_count: Number of responses < 1 second
+            - quick_responses_percentage: Percentage of quick responses
+    """
+    if len(segments) < 2:
+        return {
+            "average_seconds": 0.0,
+            "gaps": [],
+            "quick_responses_count": 0,
+            "quick_responses_percentage": 0.0,
+        }
+
+    gaps = []
+    prev_speaker = None
+    prev_end = None
+
+    for segment in segments:
+        current_speaker = segment.get("speaker")
+        current_start = segment.get("start", 0)
+
+        # Calculate gap if speaker changed
+        if prev_speaker and prev_end is not None and prev_speaker != current_speaker:
+            gap = current_start - prev_end
+            if gap >= 0:  # Only count positive gaps
+                gaps.append(gap)
+
+        prev_speaker = current_speaker
+        prev_end = segment.get("end", 0)
+
+    if not gaps:
+        return {
+            "average_seconds": 0.0,
+            "gaps": [],
+            "quick_responses_count": 0,
+            "quick_responses_percentage": 0.0,
+        }
+
+    average_gap = sum(gaps) / len(gaps)
+    quick_responses = [g for g in gaps if g < 1.0]
+    quick_percentage = (len(quick_responses) / len(gaps) * 100) if gaps else 0.0
+
+    return {
+        "average_seconds": round(average_gap, 2),
+        "gaps": [round(g, 2) for g in gaps],
+        "quick_responses_count": len(quick_responses),
+        "quick_responses_percentage": round(quick_percentage, 1),
+    }
+
+
+def detect_interruptions(segments: list[Dict[str, Any]]) -> Dict[str, Any]:
+    """
+    Detect interruptions (overlapping speech between different speakers).
+
+    Args:
+        segments: List of transcription segments with start, end, and speaker
+
+    Returns:
+        Dictionary with:
+            - total_count: Total number of interruptions
+            - interruptions: List of interruption events with details
+            - rate_per_minute: Interruptions per minute of audio
+    """
+    if len(segments) < 2:
+        return {
+            "total_count": 0,
+            "interruptions": [],
+            "rate_per_minute": 0.0,
+        }
+
+    interruptions = []
+    total_duration = segments[-1].get("end", 0) if segments else 0
+
+    # Check each segment against all others for overlaps
+    for i, seg1 in enumerate(segments):
+        speaker1 = seg1.get("speaker")
+        start1 = seg1.get("start", 0)
+        end1 = seg1.get("end", 0)
+
+        for seg2 in segments[i + 1 :]:
+            speaker2 = seg2.get("speaker")
+            start2 = seg2.get("start", 0)
+            end2 = seg2.get("end", 0)
+
+            # Check if different speakers and overlapping time
+            if speaker1 != speaker2:
+                # Check for overlap
+                overlap_start = max(start1, start2)
+                overlap_end = min(end1, end2)
+
+                if overlap_start < overlap_end:
+                    overlap_duration = overlap_end - overlap_start
+                    interruptions.append(
+                        {
+                            "time": round(overlap_start, 2),
+                            "duration": round(overlap_duration, 2),
+                            "speaker": speaker2,  # Who interrupted
+                            "interrupted": speaker1,  # Who was interrupted
+                        }
+                    )
+
+    total_count = len(interruptions)
+    rate = (total_count / (total_duration / 60)) if total_duration > 0 else 0.0
+
+    return {
+        "total_count": total_count,
+        "interruptions": interruptions[:10],  # Limit to first 10 for brevity
+        "rate_per_minute": round(rate, 2),
+    }
+
+
 async def process_job_task(
     job_id: str,
     user_id: str,
@@ -91,11 +211,11 @@ async def process_job_task(
         logger.info(f"[Job {job_id}] Downloaded {file_size_mb:.2f} MB")
         sys.stdout.flush()
 
-        # Step 1: Transcribe audio
-        logger.info(f"[Job {job_id}] Starting transcription...")
+        # Step 1: Transcribe audio (with speaker diarization)
+        logger.info(f"[Job {job_id}] Starting transcription with speaker diarization...")
         sys.stdout.flush()
         transcription_service = TranscriptionService()
-        transcription_result = transcription_service.transcribe(temp_file)
+        transcription_result = await transcription_service.transcribe(temp_file)
 
         if not transcription_result or "error" in transcription_result:
             raise Exception(
@@ -103,7 +223,8 @@ async def process_job_task(
             )
 
         logger.info(
-            f"[Job {job_id}] Transcription complete. Segments: {len(transcription_result.get('segments', []))}"
+            f"[Job {job_id}] Transcription complete. Speakers: {transcription_result.get('num_speakers', 0)}, "
+            f"Segments: {len(transcription_result.get('segments', []))}"
         )
         sys.stdout.flush()
 
@@ -161,8 +282,8 @@ async def process_job_task(
         logger.info(f"[Job {job_id}] AI analysis complete")
         sys.stdout.flush()
 
-        # Step 3: Calculate speaker statistics
-        logger.info(f"[Job {job_id}] Calculating speaker statistics...")
+        # Step 3: Calculate speaker statistics and communication metrics
+        logger.info(f"[Job {job_id}] Calculating speaker statistics and communication metrics...")
         sys.stdout.flush()
         segments = transcription_result.get("segments", [])
         speaker_stats: Dict[str, Any] = {}
@@ -186,11 +307,20 @@ async def process_job_task(
         total_time = sum(stats["total_time"] for stats in speaker_stats.values())
         for speaker, stats in speaker_stats.items():
             stats["percentage"] = (
-                (stats["total_time"] / total_time * 100) if total_time > 0 else 0
+                round((stats["total_time"] / total_time * 100), 1) if total_time > 0 else 0
             )
+            stats["total_time"] = round(stats["total_time"], 2)
+
+        # Calculate response latency (gaps between speaker turns)
+        response_latency = calculate_response_latency(segments)
+
+        # Detect interruptions (overlapping speech)
+        interruptions = detect_interruptions(segments)
 
         logger.info(
-            f"[Job {job_id}] Speaker stats calculated. Speakers: {len(speaker_stats)}"
+            f"[Job {job_id}] Metrics calculated - Speakers: {len(speaker_stats)}, "
+            f"Avg Response Latency: {response_latency['average_seconds']}s, "
+            f"Interruptions: {interruptions['total_count']}"
         )
         sys.stdout.flush()
 
@@ -208,6 +338,9 @@ async def process_job_task(
                 "overall_score": analysis_data.get("effectiveness_score", 50),
                 "key_topics": analysis_data.get("key_topics", []),
                 "action_items": analysis_data.get("action_items", []),
+                "response_latency": response_latency,
+                "interruptions": interruptions,
+                "num_speakers": len(speaker_stats),
             },
             "behavioral_insights": None,  # Can be populated later with video analysis
         }
