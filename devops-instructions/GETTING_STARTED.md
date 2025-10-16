@@ -208,6 +208,7 @@ cd ../..
 ```
 
 **Important Notes:**
+
 - The `.env` file **must** be located at `supabase/functions/.env` (not `supabase/.env.local`)
 - This file is automatically loaded when you run `./db-ops.sh start` or `supabase start`
 - Edge Functions must be running for file processing to work

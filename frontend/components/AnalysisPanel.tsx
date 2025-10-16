@@ -368,7 +368,9 @@ export default function AnalysisPanel({
                         <div
                           key={speaker}
                           className={`rounded-lg p-4 ${
-                            isMe ? 'bg-green-50 border-2 border-green-200' : 'bg-gray-50'
+                            isMe
+                              ? 'bg-green-50 border-2 border-green-200'
+                              : 'bg-gray-50'
                           }`}
                         >
                           <div className="flex items-center justify-between mb-3">
@@ -392,7 +394,9 @@ export default function AnalysisPanel({
                                     disabled={isAssigning}
                                     className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                   >
-                                    {isAssigning ? 'Assigning...' : 'This is me'}
+                                    {isAssigning
+                                      ? 'Assigning...'
+                                      : 'This is me'}
                                   </button>
                                   <button
                                     onClick={() => {
@@ -410,7 +414,9 @@ export default function AnalysisPanel({
                                 <button
                                   onClick={() => {
                                     setEditingSpeaker(speaker);
-                                    setCustomName(getSpeakerDisplayName(speaker));
+                                    setCustomName(
+                                      getSpeakerDisplayName(speaker)
+                                    );
                                   }}
                                   disabled={isAssigning}
                                   className="text-xs px-3 py-1.5 bg-gray-500 text-white rounded-md hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
@@ -429,10 +435,15 @@ export default function AnalysisPanel({
                                 <input
                                   type="text"
                                   value={customName}
-                                  onChange={(e) => setCustomName(e.target.value)}
+                                  onChange={(e) =>
+                                    setCustomName(e.target.value)
+                                  }
                                   onKeyDown={(e) => {
                                     if (e.key === 'Enter') {
-                                      handleAssignCustomName(speaker, customName);
+                                      handleAssignCustomName(
+                                        speaker,
+                                        customName
+                                      );
                                     } else if (e.key === 'Escape') {
                                       setEditingSpeaker(null);
                                       setCustomName('');
@@ -443,7 +454,9 @@ export default function AnalysisPanel({
                                   autoFocus
                                 />
                                 <button
-                                  onClick={() => handleAssignCustomName(speaker, customName)}
+                                  onClick={() =>
+                                    handleAssignCustomName(speaker, customName)
+                                  }
                                   disabled={isAssigning || !customName.trim()}
                                   className="text-xs px-3 py-1.5 bg-green-600 text-white rounded-md hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
@@ -462,130 +475,139 @@ export default function AnalysisPanel({
                               </div>
                             </div>
                           )}
-                        <div className="space-y-2">
-                          <div className="flex justify-between items-center">
-                            <span className="text-sm text-gray-600">
-                              Talk Time
-                            </span>
-                            <span className="text-sm font-medium text-gray-900">
-                              {formatDuration(stats.total_time)} (
-                              {stats.percentage.toFixed(1)}%)
-                            </span>
-                          </div>
-                          <div className="w-full bg-gray-200 rounded-full h-2">
-                            <div
-                              className="bg-blue-600 h-2 rounded-full"
-                              style={{ width: `${stats.percentage}%` }}
-                            />
-                          </div>
-                          <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-200">
-                            <div>
-                              <p className="text-xs text-gray-500">Words</p>
-                              <p className="text-lg font-semibold text-gray-900">
-                                {stats.word_count}
-                              </p>
+                          <div className="space-y-2">
+                            <div className="flex justify-between items-center">
+                              <span className="text-sm text-gray-600">
+                                Talk Time
+                              </span>
+                              <span className="text-sm font-medium text-gray-900">
+                                {formatDuration(stats.total_time)} (
+                                {stats.percentage.toFixed(1)}%)
+                              </span>
                             </div>
-                            <div>
-                              <p className="text-xs text-gray-500">Segments</p>
-                              <p className="text-lg font-semibold text-gray-900">
-                                {stats.segments}
-                              </p>
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full"
+                                style={{ width: `${stats.percentage}%` }}
+                              />
                             </div>
-                          </div>
-
-                          {/* Per-Speaker Communication Metrics */}
-                          <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
-                            {stats.response_latency !== undefined && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-600">
-                                  Response Time
-                                </span>
-                                <span className="text-sm font-medium text-gray-900">
-                                  {stats.response_latency.toFixed(2)}s
-                                </span>
-                              </div>
-                            )}
-                            {stats.quick_responses_percentage !== undefined && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-600">
-                                  Quick Responses (&lt;1s)
-                                </span>
-                                <span className="text-sm font-medium text-gray-900">
-                                  {stats.quick_responses_percentage.toFixed(1)}%
-                                </span>
-                              </div>
-                            )}
-                            {stats.times_interrupted !== undefined && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-600">
-                                  Times Interrupted
-                                </span>
-                                <span className="text-sm font-medium text-gray-900">
-                                  {stats.times_interrupted}
-                                </span>
-                              </div>
-                            )}
-                            {stats.times_interrupting !== undefined && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-600">
-                                  Times Interrupting
-                                </span>
-                                <span className="text-sm font-medium text-gray-900">
-                                  {stats.times_interrupting}
-                                </span>
-                              </div>
-                            )}
-                            {stats.interruption_rate !== undefined && (
-                              <div className="flex justify-between items-center">
-                                <span className="text-xs text-gray-600">
-                                  Interruption Rate
-                                </span>
-                                <span className="text-sm font-medium text-gray-900">
-                                  {stats.interruption_rate.toFixed(2)}/min
-                                </span>
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Communication Tips */}
-                          {stats.communication_tips &&
-                            stats.communication_tips.length > 0 && (
-                              <div className="mt-4 pt-4 border-t border-gray-200">
-                                <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
-                                  <svg
-                                    className="w-4 h-4 mr-1 text-blue-600"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                  >
-                                    <path
-                                      strokeLinecap="round"
-                                      strokeLinejoin="round"
-                                      strokeWidth={2}
-                                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
-                                    />
-                                  </svg>
-                                  Communication Tips
+                            <div className="grid grid-cols-2 gap-4 mt-3 pt-3 border-t border-gray-200">
+                              <div>
+                                <p className="text-xs text-gray-500">Words</p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                  {stats.word_count}
                                 </p>
-                                <ul className="space-y-2">
-                                  {stats.communication_tips.map((tip, idx) => (
-                                    <li
-                                      key={idx}
-                                      className="text-sm text-gray-700 flex items-start"
-                                    >
-                                      <span className="text-blue-600 mr-2 mt-0.5">
-                                        •
-                                      </span>
-                                      <span>{tip}</span>
-                                    </li>
-                                  ))}
-                                </ul>
                               </div>
-                            )}
+                              <div>
+                                <p className="text-xs text-gray-500">
+                                  Segments
+                                </p>
+                                <p className="text-lg font-semibold text-gray-900">
+                                  {stats.segments}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Per-Speaker Communication Metrics */}
+                            <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                              {stats.response_latency !== undefined && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">
+                                    Response Time
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {stats.response_latency.toFixed(2)}s
+                                  </span>
+                                </div>
+                              )}
+                              {stats.quick_responses_percentage !==
+                                undefined && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">
+                                    Quick Responses (&lt;1s)
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {stats.quick_responses_percentage.toFixed(
+                                      1
+                                    )}
+                                    %
+                                  </span>
+                                </div>
+                              )}
+                              {stats.times_interrupted !== undefined && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">
+                                    Times Interrupted
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {stats.times_interrupted}
+                                  </span>
+                                </div>
+                              )}
+                              {stats.times_interrupting !== undefined && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">
+                                    Times Interrupting
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {stats.times_interrupting}
+                                  </span>
+                                </div>
+                              )}
+                              {stats.interruption_rate !== undefined && (
+                                <div className="flex justify-between items-center">
+                                  <span className="text-xs text-gray-600">
+                                    Interruption Rate
+                                  </span>
+                                  <span className="text-sm font-medium text-gray-900">
+                                    {stats.interruption_rate.toFixed(2)}/min
+                                  </span>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Communication Tips */}
+                            {stats.communication_tips &&
+                              stats.communication_tips.length > 0 && (
+                                <div className="mt-4 pt-4 border-t border-gray-200">
+                                  <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                                    <svg
+                                      className="w-4 h-4 mr-1 text-blue-600"
+                                      fill="none"
+                                      viewBox="0 0 24 24"
+                                      stroke="currentColor"
+                                    >
+                                      <path
+                                        strokeLinecap="round"
+                                        strokeLinejoin="round"
+                                        strokeWidth={2}
+                                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                                      />
+                                    </svg>
+                                    Communication Tips
+                                  </p>
+                                  <ul className="space-y-2">
+                                    {stats.communication_tips.map(
+                                      (tip, idx) => (
+                                        <li
+                                          key={idx}
+                                          className="text-sm text-gray-700 flex items-start"
+                                        >
+                                          <span className="text-blue-600 mr-2 mt-0.5">
+                                            •
+                                          </span>
+                                          <span>{tip}</span>
+                                        </li>
+                                      )
+                                    )}
+                                  </ul>
+                                </div>
+                              )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    }
+                  )}
                 </div>
               )}
             </>
