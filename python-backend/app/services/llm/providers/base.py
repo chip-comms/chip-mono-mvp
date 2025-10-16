@@ -94,26 +94,34 @@ class AIProvider(ABC):
         """
 
     @abstractmethod
-    async def generate_communication_insights(
+    async def generate_speaker_communication_tips(
         self,
-        transcript_text: str,
+        speaker_label: str,
         talk_time_percentage: float,
-        interruptions: int,
-        num_speakers: int,
-        duration_minutes: float,
-    ) -> str:
+        word_count: int,
+        segments_count: int,
+        avg_response_latency: float,
+        times_interrupted: int,
+        times_interrupting: int,
+        total_speakers: int,
+        meeting_duration_minutes: float,
+    ) -> List[str]:
         """
-        Generate communication insights from transcript data.
+        Generate 2-3 actionable communication tips for a specific speaker.
 
         Args:
-            transcript_text: Full transcript text
-            talk_time_percentage: Percentage of time spent talking
-            interruptions: Number of interruptions
-            num_speakers: Number of speakers
-            duration_minutes: Meeting duration in minutes
+            speaker_label: Speaker identifier (e.g., "SPEAKER_A")
+            talk_time_percentage: % of meeting time this speaker talked
+            word_count: Total words spoken by this speaker
+            segments_count: Number of speaking segments
+            avg_response_latency: Average gap before responding (seconds)
+            times_interrupted: How many times this speaker was interrupted
+            times_interrupting: How many times this speaker interrupted others
+            total_speakers: Total number of speakers in meeting
+            meeting_duration_minutes: Total meeting duration
 
         Returns:
-            String with communication insights (2-3 sentences)
+            List of 2-3 actionable tip strings
         """
 
 

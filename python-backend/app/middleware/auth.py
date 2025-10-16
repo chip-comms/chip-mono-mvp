@@ -45,7 +45,10 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
             return JSONResponse(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 content={
-                    "detail": "Invalid Authorization header format. Expected: Bearer <token>"
+                    "detail": (
+                        "Invalid Authorization header format. "
+                        "Expected: Bearer <token>"
+                    )
                 },
             )
 
@@ -53,12 +56,14 @@ class APIKeyMiddleware(BaseHTTPMiddleware):
 
         # Validate API key
         print(
-            f"[AUTH] Provided key length: {len(provided_key)}, first 10: {provided_key[:10]}"
+            f"[AUTH] Provided key length: {len(provided_key)}, "
+            f"first 10: {provided_key[:10]}"
         )
         expected_len = len(self.api_key) if self.api_key else 0
         expected_preview = self.api_key[:10] if self.api_key else "None"
         print(
-            f"[AUTH] Expected key length: {expected_len}, first 10: {expected_preview}"
+            f"[AUTH] Expected key length: {expected_len}, "
+            f"first 10: {expected_preview}"
         )
         print(f"[AUTH] Keys match: {provided_key == self.api_key}")
 

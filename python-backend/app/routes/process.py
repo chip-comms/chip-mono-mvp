@@ -212,78 +212,27 @@ async def process_job_task(
         sys.stdout.flush()
 
         # Step 1: Transcribe audio (with speaker diarization)
-        logger.info(f"[Job {job_id}] Starting transcription with speaker diarization...")
+        logger.info(
+            f"[Job {job_id}] Starting transcription with speaker diarization..."
+        )
         sys.stdout.flush()
         transcription_service = TranscriptionService()
         transcription_result = await transcription_service.transcribe(temp_file)
 
         if not transcription_result or "error" in transcription_result:
-            raise Exception(
-                f"Transcription failed: {transcription_result.get('error', 'Unknown error')}"
-            )
+            error_msg = transcription_result.get("error", "Unknown error")
+            raise Exception(f"Transcription failed: {error_msg}")
 
+        num_speakers = transcription_result.get("num_speakers", 0)
+        num_segments = len(transcription_result.get("segments", []))
         logger.info(
-            f"[Job {job_id}] Transcription complete. Speakers: {transcription_result.get('num_speakers', 0)}, "
-            f"Segments: {len(transcription_result.get('segments', []))}"
+            f"[Job {job_id}] Transcription complete. "
+            f"Speakers: {num_speakers}, Segments: {num_segments}"
         )
         sys.stdout.flush()
 
-        # Step 2: Generate AI analysis
-        logger.info(f"[Job {job_id}] Starting AI analysis...")
-        sys.stdout.flush()
-        llm_adapter = LLMAdapter()
-
-        # Generate summary and insights from transcript
-        transcript_text = transcription_result.get("text", "")
-
-        # Use the analyze_transcript method from LLM adapter
-        try:
-            analysis_result = await llm_adapter.analyze_transcript(transcript_text)
-
-            # Convert AnalysisResult to dict format expected by database
-            key_topics = (
-                [topic.topic for topic in analysis_result.key_topics]
-                if analysis_result.key_topics
-                else []
-            )
-            action_items = (
-                [
-                    {"text": item.text, "priority": item.priority}
-                    for item in analysis_result.action_items
-                ]
-                if analysis_result.action_items
-                else []
-            )
-            effectiveness = (
-                int(analysis_result.sentiment.score * 100)
-                if analysis_result.sentiment
-                else 50
-            )
-
-            analysis_data = {
-                "summary": analysis_result.summary,
-                "key_topics": key_topics,
-                "action_items": action_items,
-                "effectiveness_score": effectiveness,
-            }
-        except Exception as llm_error:
-            logger.warning(
-                f"[Job {job_id}] LLM analysis failed: {str(llm_error)}, using fallback"
-            )
-            sys.stdout.flush()
-            # Fallback analysis if LLM fails
-            analysis_data = {
-                "summary": f"Meeting transcript analyzed with {len(transcript_text.split())} words.",
-                "key_topics": ["General Discussion"],
-                "action_items": [],
-                "effectiveness_score": 50,
-            }
-
-        logger.info(f"[Job {job_id}] AI analysis complete")
-        sys.stdout.flush()
-
-        # Step 3: Calculate speaker statistics and communication metrics
-        logger.info(f"[Job {job_id}] Calculating speaker statistics and communication metrics...")
+        # Step 2: Calculate speaker statistics first
+        logger.info(f"[Job {job_id}] Calculating speaker statistics...")
         sys.stdout.flush()
         segments = transcription_result.get("segments", [])
         speaker_stats: Dict[str, Any] = {}
@@ -306,10 +255,20 @@ async def process_job_task(
         # Calculate percentages
         total_time = sum(stats["total_time"] for stats in speaker_stats.values())
         for speaker, stats in speaker_stats.items():
-            stats["percentage"] = (
-                round((stats["total_time"] / total_time * 100), 1) if total_time > 0 else 0
-            )
+            if total_time > 0:
+                percentage = round((stats["total_time"] / total_time * 100), 1)
+            else:
+                percentage = 0
+            stats["percentage"] = percentage
             stats["total_time"] = round(stats["total_time"], 2)
+
+        logger.info(f"[Job {job_id}] Speaker statistics calculated")
+        sys.stdout.flush()
+
+        # Step 3: Calculate communication metrics (response latency, interruptions)
+
+        logger.info(f"[Job {job_id}] Calculating communication metrics...")
+        sys.stdout.flush()
 
         # Calculate response latency (gaps between speaker turns)
         response_latency = calculate_response_latency(segments)
@@ -324,7 +283,61 @@ async def process_job_task(
         )
         sys.stdout.flush()
 
-        # Step 4: Save results to database
+        # Step 4: Generate per-speaker communication tips using LLM
+        logger.info(f"[Job {job_id}] Generating communication tips for each speaker...")
+        sys.stdout.flush()
+
+        llm_adapter = LLMAdapter()
+        meeting_duration_minutes = transcription_result.get("duration", 0) / 60
+
+        # Calculate per-speaker interruption counts
+        speaker_interruption_counts = {}
+        for speaker in speaker_stats.keys():
+            speaker_interruption_counts[speaker] = {
+                "interrupted": 0,
+                "interrupting": 0,
+            }
+
+        for interruption in interruptions.get("interruptions", []):
+            interrupted_speaker = interruption.get("interrupted")
+            interrupting_speaker = interruption.get("speaker")
+
+            if interrupted_speaker in speaker_interruption_counts:
+                speaker_interruption_counts[interrupted_speaker]["interrupted"] += 1
+            if interrupting_speaker in speaker_interruption_counts:
+                speaker_interruption_counts[interrupting_speaker]["interrupting"] += 1
+
+        # Generate tips for each speaker
+        for speaker, stats in speaker_stats.items():
+            try:
+                provider = await llm_adapter.get_provider()
+                speaker_counts = speaker_interruption_counts.get(speaker, {})
+                tips = await provider.generate_speaker_communication_tips(
+                    speaker_label=speaker,
+                    talk_time_percentage=stats["percentage"],
+                    word_count=stats["word_count"],
+                    segments_count=stats["segments"],
+                    avg_response_latency=response_latency.get("average_seconds", 0),
+                    times_interrupted=speaker_counts.get("interrupted", 0),
+                    times_interrupting=speaker_counts.get("interrupting", 0),
+                    total_speakers=len(speaker_stats),
+                    meeting_duration_minutes=meeting_duration_minutes,
+                )
+                stats["communication_tips"] = tips
+                logger.info(f"[Job {job_id}] Generated {len(tips)} tips for {speaker}")
+            except Exception as tip_error:
+                logger.warning(
+                    f"[Job {job_id}] Failed to generate tips for {speaker}: "
+                    f"{str(tip_error)}"
+                )
+                stats["communication_tips"] = [
+                    "Focus on balanced participation in meetings.",
+                    "Practice active listening and timely responses.",
+                ]
+
+        sys.stdout.flush()
+
+        # Step 5: Save results to database
         logger.info(f"[Job {job_id}] Saving analysis to database...")
         sys.stdout.flush()
 
@@ -332,17 +345,15 @@ async def process_job_task(
             "job_id": job_id,
             "user_id": user_id,
             "transcript": transcription_result,
-            "summary": analysis_data.get("summary"),
+            "summary": None,  # No longer using LLM-generated meeting summary
+            # Now includes communication_tips per speaker
             "speaker_stats": speaker_stats,
             "communication_metrics": {
-                "overall_score": analysis_data.get("effectiveness_score", 50),
-                "key_topics": analysis_data.get("key_topics", []),
-                "action_items": analysis_data.get("action_items", []),
                 "response_latency": response_latency,
                 "interruptions": interruptions,
-                "num_speakers": len(speaker_stats),
             },
-            "behavioral_insights": None,  # Can be populated later with video analysis
+            # Can be populated later with video analysis
+            "behavioral_insights": None,
         }
 
         await supabase.save_analysis_results(job_id, analysis_record)

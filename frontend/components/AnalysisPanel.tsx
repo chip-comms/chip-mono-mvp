@@ -15,6 +15,7 @@ interface SpeakerStat {
   word_count: number;
   segments: number;
   percentage: number;
+  communication_tips: string[];
 }
 
 interface MeetingAnalysis {
@@ -31,10 +32,9 @@ interface MeetingAnalysis {
     duration: number;
     num_speakers: number;
   };
-  summary: string;
+  summary: string | null;
   speaker_stats: Record<string, SpeakerStat>;
   communication_metrics: {
-    overall_score: number;
     response_latency?: {
       average_seconds: number;
       quick_responses_count: number;
@@ -57,8 +57,8 @@ export default function AnalysisPanel({
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<
-    'summary' | 'transcript' | 'speakers' | 'metrics'
-  >('summary');
+    'transcript' | 'speakers' | 'metrics'
+  >('transcript');
 
   const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
@@ -150,7 +150,6 @@ export default function AnalysisPanel({
           {/* Tabs */}
           <div className="flex space-x-4">
             {[
-              { id: 'summary', label: 'Summary' },
               { id: 'transcript', label: 'Transcript' },
               { id: 'speakers', label: 'Speakers' },
               { id: 'metrics', label: 'Metrics' },
@@ -158,9 +157,7 @@ export default function AnalysisPanel({
               <button
                 key={tab.id}
                 onClick={() =>
-                  setActiveTab(
-                    tab.id as 'summary' | 'transcript' | 'speakers' | 'metrics'
-                  )
+                  setActiveTab(tab.id as 'transcript' | 'speakers' | 'metrics')
                 }
                 className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   activeTab === tab.id
@@ -193,56 +190,6 @@ export default function AnalysisPanel({
 
           {!isLoading && !error && analysis && (
             <>
-              {/* Summary Tab */}
-              {activeTab === 'summary' && (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-3">
-                      Meeting Summary
-                    </h3>
-                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap">
-                      {analysis.summary || 'No summary available.'}
-                    </p>
-                  </div>
-
-                  {/* Quick Stats */}
-                  <div className="grid grid-cols-2 gap-4 pt-4 border-t">
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <p className="text-sm text-blue-600 font-medium">
-                        Duration
-                      </p>
-                      <p className="text-2xl font-bold text-blue-900 mt-1">
-                        {formatDuration(analysis.transcript.duration)}
-                      </p>
-                    </div>
-                    <div className="bg-green-50 rounded-lg p-4">
-                      <p className="text-sm text-green-600 font-medium">
-                        Speakers
-                      </p>
-                      <p className="text-2xl font-bold text-green-900 mt-1">
-                        {analysis.transcript.num_speakers}
-                      </p>
-                    </div>
-                    <div className="bg-purple-50 rounded-lg p-4">
-                      <p className="text-sm text-purple-600 font-medium">
-                        Overall Score
-                      </p>
-                      <p className="text-2xl font-bold text-purple-900 mt-1">
-                        {analysis.communication_metrics.overall_score}/100
-                      </p>
-                    </div>
-                    <div className="bg-orange-50 rounded-lg p-4">
-                      <p className="text-sm text-orange-600 font-medium">
-                        Segments
-                      </p>
-                      <p className="text-2xl font-bold text-orange-900 mt-1">
-                        {analysis.transcript.segments.length}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* Transcript Tab */}
               {activeTab === 'transcript' && (
                 <div className="space-y-4">
@@ -311,6 +258,42 @@ export default function AnalysisPanel({
                               </p>
                             </div>
                           </div>
+
+                          {/* Communication Tips */}
+                          {stats.communication_tips &&
+                            stats.communication_tips.length > 0 && (
+                              <div className="mt-4 pt-4 border-t border-gray-200">
+                                <p className="text-xs font-semibold text-gray-700 mb-2 flex items-center">
+                                  <svg
+                                    className="w-4 h-4 mr-1 text-blue-600"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                  >
+                                    <path
+                                      strokeLinecap="round"
+                                      strokeLinejoin="round"
+                                      strokeWidth={2}
+                                      d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
+                                    />
+                                  </svg>
+                                  Communication Tips
+                                </p>
+                                <ul className="space-y-2">
+                                  {stats.communication_tips.map((tip, idx) => (
+                                    <li
+                                      key={idx}
+                                      className="text-sm text-gray-700 flex items-start"
+                                    >
+                                      <span className="text-blue-600 mr-2 mt-0.5">
+                                        •
+                                      </span>
+                                      <span>{tip}</span>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            )}
                         </div>
                       </div>
                     )
@@ -394,23 +377,6 @@ export default function AnalysisPanel({
                       </div>
                     </div>
                   )}
-
-                  {/* Overall Score */}
-                  <div className="bg-purple-50 rounded-lg p-4">
-                    <h4 className="text-md font-semibold text-purple-900 mb-3">
-                      Overall Effectiveness
-                    </h4>
-                    <div className="flex items-center justify-center">
-                      <div className="text-center">
-                        <div className="text-4xl font-bold text-purple-900">
-                          {analysis.communication_metrics.overall_score}
-                        </div>
-                        <div className="text-sm text-purple-700 mt-1">
-                          out of 100
-                        </div>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
             </>
