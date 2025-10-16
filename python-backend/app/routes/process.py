@@ -63,29 +63,26 @@ async def download_file(url: str, destination: Path) -> None:
                     f.write(chunk)
 
 
-def calculate_response_latency(segments: list[Dict[str, Any]]) -> Dict[str, Any]:
+def calculate_per_speaker_response_latency(
+    segments: list[Dict[str, Any]]
+) -> Dict[str, Dict[str, Any]]:
     """
-    Calculate response latency metrics (gaps between speaker turns).
+    Calculate response latency metrics per speaker.
 
     Args:
         segments: List of transcription segments with start, end, and speaker
 
     Returns:
-        Dictionary with:
-            - average_seconds: Average gap between speaker turns
-            - gaps: List of gap durations
+        Dictionary mapping speaker to their response latency metrics:
+            - average_seconds: Average gap before this speaker responds
+            - response_count: Number of times this speaker responded
             - quick_responses_count: Number of responses < 1 second
             - quick_responses_percentage: Percentage of quick responses
     """
     if len(segments) < 2:
-        return {
-            "average_seconds": 0.0,
-            "gaps": [],
-            "quick_responses_count": 0,
-            "quick_responses_percentage": 0.0,
-        }
+        return {}
 
-    gaps = []
+    speaker_gaps: Dict[str, list[float]] = {}
     prev_speaker = None
     prev_end = None
 
@@ -97,90 +94,108 @@ def calculate_response_latency(segments: list[Dict[str, Any]]) -> Dict[str, Any]
         if prev_speaker and prev_end is not None and prev_speaker != current_speaker:
             gap = current_start - prev_end
             if gap >= 0:  # Only count positive gaps
-                gaps.append(gap)
+                # This gap belongs to the current speaker (who is responding)
+                if current_speaker not in speaker_gaps:
+                    speaker_gaps[current_speaker] = []
+                speaker_gaps[current_speaker].append(gap)
 
         prev_speaker = current_speaker
         prev_end = segment.get("end", 0)
 
-    if not gaps:
-        return {
-            "average_seconds": 0.0,
-            "gaps": [],
-            "quick_responses_count": 0,
-            "quick_responses_percentage": 0.0,
+    # Calculate metrics for each speaker
+    result = {}
+    for speaker, gaps in speaker_gaps.items():
+        if not gaps:
+            continue
+
+        average_gap = sum(gaps) / len(gaps)
+        quick_responses = [g for g in gaps if g < 1.0]
+        quick_percentage = (len(quick_responses) / len(gaps) * 100)
+
+        result[speaker] = {
+            "average_seconds": round(average_gap, 2),
+            "response_count": len(gaps),
+            "quick_responses_count": len(quick_responses),
+            "quick_responses_percentage": round(quick_percentage, 1),
         }
 
-    average_gap = sum(gaps) / len(gaps)
-    quick_responses = [g for g in gaps if g < 1.0]
-    quick_percentage = (len(quick_responses) / len(gaps) * 100) if gaps else 0.0
-
-    return {
-        "average_seconds": round(average_gap, 2),
-        "gaps": [round(g, 2) for g in gaps],
-        "quick_responses_count": len(quick_responses),
-        "quick_responses_percentage": round(quick_percentage, 1),
-    }
+    return result
 
 
-def detect_interruptions(segments: list[Dict[str, Any]]) -> Dict[str, Any]:
+def calculate_per_speaker_interruptions(
+    segments: list[Dict[str, Any]]
+) -> Dict[str, Dict[str, Any]]:
     """
-    Detect interruptions (overlapping speech between different speakers).
+    Calculate interruption metrics per speaker.
 
     Args:
         segments: List of transcription segments with start, end, and speaker
 
     Returns:
-        Dictionary with:
-            - total_count: Total number of interruptions
-            - interruptions: List of interruption events with details
-            - rate_per_minute: Interruptions per minute of audio
+        Dictionary mapping speaker to their interruption metrics:
+            - times_interrupted: Times this speaker was interrupted
+            - times_interrupting: Times this speaker interrupted others
+            - interruption_rate: Interruptions per minute of their talk time
     """
     if len(segments) < 2:
-        return {
-            "total_count": 0,
-            "interruptions": [],
-            "rate_per_minute": 0.0,
-        }
+        return {}
 
-    interruptions = []
-    total_duration = segments[-1].get("end", 0) if segments else 0
+    speaker_interruptions: Dict[str, Dict[str, Any]] = {}
+    speaker_talk_time: Dict[str, float] = {}
 
-    # Check each segment against all others for overlaps
+    # Initialize speaker metrics
+    for seg in segments:
+        speaker = seg.get("speaker")
+        if speaker not in speaker_interruptions:
+            speaker_interruptions[speaker] = {
+                "times_interrupted": 0,
+                "times_interrupting": 0,
+            }
+            speaker_talk_time[speaker] = 0.0
+
+        # Track talk time
+        duration = seg.get("end", 0) - seg.get("start", 0)
+        speaker_talk_time[speaker] += duration
+
+    # Detect interruptions
     for i, seg1 in enumerate(segments):
         speaker1 = seg1.get("speaker")
         start1 = seg1.get("start", 0)
         end1 = seg1.get("end", 0)
 
-        for seg2 in segments[i + 1 :]:
+        for seg2 in segments[i + 1:]:
             speaker2 = seg2.get("speaker")
             start2 = seg2.get("start", 0)
             end2 = seg2.get("end", 0)
 
             # Check if different speakers and overlapping time
             if speaker1 != speaker2:
-                # Check for overlap
                 overlap_start = max(start1, start2)
                 overlap_end = min(end1, end2)
 
                 if overlap_start < overlap_end:
-                    overlap_duration = overlap_end - overlap_start
-                    interruptions.append(
-                        {
-                            "time": round(overlap_start, 2),
-                            "duration": round(overlap_duration, 2),
-                            "speaker": speaker2,  # Who interrupted
-                            "interrupted": speaker1,  # Who was interrupted
-                        }
-                    )
+                    # speaker2 interrupted speaker1
+                    speaker_interruptions[speaker1]["times_interrupted"] += 1
+                    speaker_interruptions[speaker2]["times_interrupting"] += 1
 
-    total_count = len(interruptions)
-    rate = (total_count / (total_duration / 60)) if total_duration > 0 else 0.0
+    # Calculate interruption rates
+    result = {}
+    for speaker, metrics in speaker_interruptions.items():
+        talk_time_minutes = speaker_talk_time[speaker] / 60
+        interruption_rate = 0.0
+        if talk_time_minutes > 0:
+            total_interruptions = (
+                metrics["times_interrupted"] + metrics["times_interrupting"]
+            )
+            interruption_rate = total_interruptions / talk_time_minutes
 
-    return {
-        "total_count": total_count,
-        "interruptions": interruptions[:10],  # Limit to first 10 for brevity
-        "rate_per_minute": round(rate, 2),
-    }
+        result[speaker] = {
+            "times_interrupted": metrics["times_interrupted"],
+            "times_interrupting": metrics["times_interrupting"],
+            "interruption_rate": round(interruption_rate, 2),
+        }
+
+    return result
 
 
 async def process_job_task(
@@ -265,66 +280,69 @@ async def process_job_task(
         logger.info(f"[Job {job_id}] Speaker statistics calculated")
         sys.stdout.flush()
 
-        # Step 3: Calculate communication metrics (response latency, interruptions)
-
-        logger.info(f"[Job {job_id}] Calculating communication metrics...")
+        # Step 3: Calculate per-speaker communication metrics
+        logger.info(f"[Job {job_id}] Calculating per-speaker metrics...")
         sys.stdout.flush()
 
-        # Calculate response latency (gaps between speaker turns)
-        response_latency = calculate_response_latency(segments)
+        # Calculate per-speaker response latency
+        per_speaker_latency = calculate_per_speaker_response_latency(segments)
 
-        # Detect interruptions (overlapping speech)
-        interruptions = detect_interruptions(segments)
+        # Calculate per-speaker interruptions
+        per_speaker_interruptions = calculate_per_speaker_interruptions(segments)
 
-        logger.info(
-            f"[Job {job_id}] Metrics calculated - Speakers: {len(speaker_stats)}, "
-            f"Avg Response Latency: {response_latency['average_seconds']}s, "
-            f"Interruptions: {interruptions['total_count']}"
-        )
+        # Merge metrics into speaker_stats
+        for speaker, stats in speaker_stats.items():
+            # Add response latency metrics
+            latency_metrics = per_speaker_latency.get(speaker, {})
+            stats["response_latency"] = latency_metrics.get("average_seconds", 0.0)
+            stats["response_count"] = latency_metrics.get("response_count", 0)
+            stats["quick_responses_percentage"] = latency_metrics.get(
+                "quick_responses_percentage", 0.0
+            )
+
+            # Add interruption metrics
+            interruption_metrics = per_speaker_interruptions.get(speaker, {})
+            stats["times_interrupted"] = interruption_metrics.get(
+                "times_interrupted", 0
+            )
+            stats["times_interrupting"] = interruption_metrics.get(
+                "times_interrupting", 0
+            )
+            stats["interruption_rate"] = interruption_metrics.get(
+                "interruption_rate", 0.0
+            )
+
+        logger.info(f"[Job {job_id}] Per-speaker metrics calculated")
         sys.stdout.flush()
 
         # Step 4: Generate per-speaker communication tips using LLM
-        logger.info(f"[Job {job_id}] Generating communication tips for each speaker...")
+        logger.info(
+            f"[Job {job_id}] Generating communication tips for each speaker..."
+        )
         sys.stdout.flush()
 
         llm_adapter = LLMAdapter()
         meeting_duration_minutes = transcription_result.get("duration", 0) / 60
 
-        # Calculate per-speaker interruption counts
-        speaker_interruption_counts = {}
-        for speaker in speaker_stats.keys():
-            speaker_interruption_counts[speaker] = {
-                "interrupted": 0,
-                "interrupting": 0,
-            }
-
-        for interruption in interruptions.get("interruptions", []):
-            interrupted_speaker = interruption.get("interrupted")
-            interrupting_speaker = interruption.get("speaker")
-
-            if interrupted_speaker in speaker_interruption_counts:
-                speaker_interruption_counts[interrupted_speaker]["interrupted"] += 1
-            if interrupting_speaker in speaker_interruption_counts:
-                speaker_interruption_counts[interrupting_speaker]["interrupting"] += 1
-
         # Generate tips for each speaker
         for speaker, stats in speaker_stats.items():
             try:
                 provider = await llm_adapter.get_provider()
-                speaker_counts = speaker_interruption_counts.get(speaker, {})
                 tips = await provider.generate_speaker_communication_tips(
                     speaker_label=speaker,
                     talk_time_percentage=stats["percentage"],
                     word_count=stats["word_count"],
                     segments_count=stats["segments"],
-                    avg_response_latency=response_latency.get("average_seconds", 0),
-                    times_interrupted=speaker_counts.get("interrupted", 0),
-                    times_interrupting=speaker_counts.get("interrupting", 0),
+                    avg_response_latency=stats.get("response_latency", 0.0),
+                    times_interrupted=stats.get("times_interrupted", 0),
+                    times_interrupting=stats.get("times_interrupting", 0),
                     total_speakers=len(speaker_stats),
                     meeting_duration_minutes=meeting_duration_minutes,
                 )
                 stats["communication_tips"] = tips
-                logger.info(f"[Job {job_id}] Generated {len(tips)} tips for {speaker}")
+                logger.info(
+                    f"[Job {job_id}] Generated {len(tips)} tips for {speaker}"
+                )
             except Exception as tip_error:
                 logger.warning(
                     f"[Job {job_id}] Failed to generate tips for {speaker}: "
@@ -346,12 +364,13 @@ async def process_job_task(
             "user_id": user_id,
             "transcript": transcription_result,
             "summary": None,  # No longer using LLM-generated meeting summary
-            # Now includes communication_tips per speaker
+            # speaker_stats now includes all per-speaker metrics:
+            # - total_time, word_count, segments, percentage
+            # - response_latency, response_count, quick_responses_percentage
+            # - times_interrupted, times_interrupting, interruption_rate
+            # - communication_tips
             "speaker_stats": speaker_stats,
-            "communication_metrics": {
-                "response_latency": response_latency,
-                "interruptions": interruptions,
-            },
+            "communication_metrics": None,  # Metrics now per-speaker
             # Can be populated later with video analysis
             "behavioral_insights": None,
         }

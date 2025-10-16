@@ -15,6 +15,13 @@ interface SpeakerStat {
   word_count: number;
   segments: number;
   percentage: number;
+  // Per-speaker metrics
+  response_latency?: number;
+  response_count?: number;
+  quick_responses_percentage?: number;
+  times_interrupted?: number;
+  times_interrupting?: number;
+  interruption_rate?: number;
   communication_tips: string[];
 }
 
@@ -34,17 +41,7 @@ interface MeetingAnalysis {
   };
   summary: string | null;
   speaker_stats: Record<string, SpeakerStat>;
-  communication_metrics: {
-    response_latency?: {
-      average_seconds: number;
-      quick_responses_count: number;
-      quick_responses_percentage: number;
-    };
-    interruptions?: {
-      total_count: number;
-      rate_per_minute: number;
-    };
-  };
+  communication_metrics: null; // Deprecated - metrics now in speaker_stats
 }
 
 export default function AnalysisPanel({
@@ -56,9 +53,9 @@ export default function AnalysisPanel({
   const [analysis, setAnalysis] = useState<MeetingAnalysis | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<
-    'transcript' | 'speakers' | 'metrics'
-  >('transcript');
+  const [activeTab, setActiveTab] = useState<'transcript' | 'speakers'>(
+    'transcript'
+  );
 
   const fetchAnalysis = useCallback(async () => {
     setIsLoading(true);
@@ -151,13 +148,12 @@ export default function AnalysisPanel({
           <div className="flex space-x-4">
             {[
               { id: 'transcript', label: 'Transcript' },
-              { id: 'speakers', label: 'Speakers' },
-              { id: 'metrics', label: 'Metrics' },
+              { id: 'speakers', label: 'Speakers & Metrics' },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() =>
-                  setActiveTab(tab.id as 'transcript' | 'speakers' | 'metrics')
+                  setActiveTab(tab.id as 'transcript' | 'speakers')
                 }
                 className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                   activeTab === tab.id
@@ -220,7 +216,7 @@ export default function AnalysisPanel({
               {activeTab === 'speakers' && (
                 <div className="space-y-6">
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Speaker Statistics
+                    Speaker Statistics & Metrics
                   </h3>
                   {Object.entries(analysis.speaker_stats).map(
                     ([speaker, stats]) => (
@@ -257,6 +253,60 @@ export default function AnalysisPanel({
                                 {stats.segments}
                               </p>
                             </div>
+                          </div>
+
+                          {/* Per-Speaker Communication Metrics */}
+                          <div className="mt-3 pt-3 border-t border-gray-200 space-y-2">
+                            {stats.response_latency !== undefined && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">
+                                  Response Time
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {stats.response_latency.toFixed(2)}s
+                                </span>
+                              </div>
+                            )}
+                            {stats.quick_responses_percentage !== undefined && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">
+                                  Quick Responses (&lt;1s)
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {stats.quick_responses_percentage.toFixed(1)}%
+                                </span>
+                              </div>
+                            )}
+                            {stats.times_interrupted !== undefined && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">
+                                  Times Interrupted
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {stats.times_interrupted}
+                                </span>
+                              </div>
+                            )}
+                            {stats.times_interrupting !== undefined && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">
+                                  Times Interrupting
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {stats.times_interrupting}
+                                </span>
+                              </div>
+                            )}
+                            {stats.interruption_rate !== undefined && (
+                              <div className="flex justify-between items-center">
+                                <span className="text-xs text-gray-600">
+                                  Interruption Rate
+                                </span>
+                                <span className="text-sm font-medium text-gray-900">
+                                  {stats.interruption_rate.toFixed(2)}/min
+                                </span>
+                              </div>
+                            )}
                           </div>
 
                           {/* Communication Tips */}
@@ -297,85 +347,6 @@ export default function AnalysisPanel({
                         </div>
                       </div>
                     )
-                  )}
-                </div>
-              )}
-
-              {/* Metrics Tab */}
-              {activeTab === 'metrics' && (
-                <div className="space-y-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">
-                    Communication Metrics
-                  </h3>
-
-                  {/* Response Latency */}
-                  {analysis.communication_metrics.response_latency && (
-                    <div className="bg-blue-50 rounded-lg p-4">
-                      <h4 className="text-md font-semibold text-blue-900 mb-3">
-                        Response Latency
-                      </h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-blue-700">
-                            Average Gap
-                          </span>
-                          <span className="text-sm font-medium text-blue-900">
-                            {analysis.communication_metrics.response_latency.average_seconds.toFixed(
-                              2
-                            )}
-                            s
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-blue-700">
-                            Quick Responses (&lt;1s)
-                          </span>
-                          <span className="text-sm font-medium text-blue-900">
-                            {
-                              analysis.communication_metrics.response_latency
-                                .quick_responses_count
-                            }{' '}
-                            (
-                            {analysis.communication_metrics.response_latency.quick_responses_percentage.toFixed(
-                              1
-                            )}
-                            %)
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Interruptions */}
-                  {analysis.communication_metrics.interruptions && (
-                    <div className="bg-orange-50 rounded-lg p-4">
-                      <h4 className="text-md font-semibold text-orange-900 mb-3">
-                        Interruptions
-                      </h4>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <span className="text-sm text-orange-700">
-                            Total Count
-                          </span>
-                          <span className="text-sm font-medium text-orange-900">
-                            {
-                              analysis.communication_metrics.interruptions
-                                .total_count
-                            }
-                          </span>
-                        </div>
-                        <div className="flex justify-between">
-                          <span className="text-sm text-orange-700">
-                            Rate per Minute
-                          </span>
-                          <span className="text-sm font-medium text-orange-900">
-                            {analysis.communication_metrics.interruptions.rate_per_minute.toFixed(
-                              2
-                            )}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
                   )}
                 </div>
               )}
