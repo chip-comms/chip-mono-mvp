@@ -1,18 +1,15 @@
 import { createServerSupabaseClient } from '@/lib/supabase-server';
 import { NextRequest, NextResponse } from 'next/server';
-import { randomUUID } from 'crypto';
-import {
-  validateFile,
-  MAX_FILE_SIZE,
-  getFileExtension,
-} from '@/lib/upload-constants';
+import { MAX_FILE_SIZE } from '@/lib/upload-constants';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
 
 /**
  * POST /api/upload
- * Handles file upload to Supabase Storage and creates processing job
+ * Creates processing job record after client-side upload to Supabase Storage
+ * NOTE: File upload now happens directly from client to Supabase Storage
+ * to bypass Vercel's 4.5MB body size limit
  */
 export async function POST(request: NextRequest) {
   try {
@@ -36,85 +33,29 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Parse form data
-    const formData = await request.formData();
-    const file = formData.get('file') as File;
+    // Parse JSON body (sent from client after file upload)
+    const body = await request.json();
+    const { jobId, storagePath, originalFilename, fileSizeMB } = body;
 
-    if (!file) {
+    if (!jobId || !storagePath || !originalFilename || !fileSizeMB) {
       return NextResponse.json(
-        { success: false, message: 'No file provided' },
+        { success: false, message: 'Missing required fields' },
         { status: 400 }
       );
     }
 
-    // Validate file on server side
-    const validation = validateFile(file);
-    if (!validation.valid) {
-      return NextResponse.json(
-        { success: false, message: validation.error },
-        { status: 400 }
-      );
-    }
-
-    // Generate unique job ID
-    const jobId = randomUUID();
-
-    // Generate storage path (relative to bucket, not including bucket name)
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = String(now.getMonth() + 1).padStart(2, '0');
-    const ext = getFileExtension(file.name);
-    const storagePath = `${user.id}/${year}/${month}/${jobId}.${ext}`;
-
-    // Upload to Supabase Storage
-    console.log('Attempting upload to:', storagePath);
-    console.log(
-      'File size:',
-      file.size,
-      'bytes (',
-      (file.size / 1024 / 1024).toFixed(2),
-      'MB)'
-    );
-    console.log('Content type:', file.type);
-
-    // Convert File to ArrayBuffer for upload
-    const fileArrayBuffer = await file.arrayBuffer();
-
-    const { data: uploadData, error: uploadError } = await supabase.storage
-      .from('recordings')
-      .upload(storagePath, fileArrayBuffer, {
-        contentType: file.type,
-        cacheControl: '3600',
-        upsert: false,
-      });
-
-    if (uploadError) {
-      console.error('Upload error details:', {
-        message: uploadError.message,
-        name: uploadError.name,
-        statusCode: (uploadError as any).statusCode,
-        error: (uploadError as any).error,
-      });
-      return NextResponse.json(
-        {
-          success: false,
-          message: `Failed to upload file: ${uploadError.message}`,
-          error: uploadError.message,
-        },
-        { status: 500 }
-      );
-    }
-
-    console.log('Upload successful:', uploadData);
+    console.log('Creating processing job:', {
+      jobId,
+      storagePath,
+      originalFilename,
+      fileSizeMB,
+    });
 
     // Create processing job record
-    // Convert file size from bytes to megabytes
-    const fileSizeMB = Number((file.size / (1024 * 1024)).toFixed(2));
-
     const { error: dbError } = await supabase.from('processing_jobs').insert({
       id: jobId,
       user_id: user.id,
-      original_filename: file.name,
+      original_filename: originalFilename,
       file_size_mb: fileSizeMB,
       storage_path: storagePath,
       status: 'pending',
@@ -122,9 +63,6 @@ export async function POST(request: NextRequest) {
 
     if (dbError) {
       console.error('Database error:', dbError);
-      // Try to clean up uploaded file
-      await supabase.storage.from('recordings').remove([storagePath]);
-
       return NextResponse.json(
         {
           success: false,
@@ -134,24 +72,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Generate signed URL for Python backend (2 hour expiry)
-    const { data: signedUrlData, error: signedUrlError } =
-      await supabase.storage
-        .from('recordings')
-        .createSignedUrl(storagePath, 7200); // 2 hours in seconds
-
-    if (signedUrlError) {
-      console.error('Signed URL error:', signedUrlError);
-      // This is not critical, so we don't fail the request
-    }
+    console.log('Processing job created successfully');
 
     return NextResponse.json(
       {
         success: true,
         jobId,
         storagePath,
-        signedUrl: signedUrlData?.signedUrl,
-        message: 'File uploaded successfully',
+        message: 'Processing job created successfully',
       },
       { status: 201 }
     );
@@ -160,7 +88,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(
       {
         success: false,
-        message: 'An unexpected error occurred during upload',
+        message: 'An unexpected error occurred',
       },
       { status: 500 }
     );
